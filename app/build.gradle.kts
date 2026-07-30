@@ -51,8 +51,9 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     // Not managed by the BOM anymore (icons were decoupled after Compose 1.7);
-    // 1.7.8 is the final release of this artifact.
-    implementation("androidx.compose.material:material-icons-core:1.7.8")
+    // 1.7.8 is the final release of this artifact. Extended (not core) for
+    // the full icon set — Groups, PersonAdd, etc. aren't in core.
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.splitzy.domain.model.Expense
 import com.example.splitzy.domain.usecase.AddExpenseUseCase
 import com.example.splitzy.domain.usecase.CalculateBalancesUseCase
+import com.example.splitzy.domain.usecase.GenerateSettlementReportUseCase
 import com.example.splitzy.domain.usecase.GetExpensesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,7 +26,8 @@ import javax.inject.Inject
 class ExpenseViewModel @Inject constructor(
     getExpenses: GetExpensesUseCase,
     private val addExpenseUseCase: AddExpenseUseCase,
-    private val calculateBalances: CalculateBalancesUseCase
+    private val calculateBalances: CalculateBalancesUseCase,
+    private val generateReport: GenerateSettlementReportUseCase
 ) : ViewModel() {
 
     private val selectedGroupId = MutableStateFlow<String?>(null)
@@ -88,4 +90,10 @@ class ExpenseViewModel @Inject constructor(
     fun userMessageShown() {
         userMessage.value = null
     }
+
+    // Formats whatever is currently on screen — callable any time, not tied
+    // to any particular event, since the user might want a report mid-trip
+    // or after everyone's settled up.
+    fun buildReport(groupName: String): String =
+        generateReport(groupName, uiState.value.expenses, uiState.value.settlements)
 }
