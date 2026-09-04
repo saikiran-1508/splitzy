@@ -6,25 +6,30 @@ import com.example.splitzy.domain.model.Expense
 
 fun ExpenseEntity.toDomain() = Expense(
     id = id, groupId = groupId, description = description, amount = amount,
-    paidByUserId = paidByUserId, splitBetween = splitBetween, createdAt = createdAt
+    paidByUserId = paidByUserId, splitBetween = splitBetween, createdAt = createdAt,
+    categoryId = categoryId
 )
 
 fun Expense.toEntity() = ExpenseEntity(
     id = id, groupId = groupId, description = description, amount = amount,
-    paidByUserId = paidByUserId, splitBetween = splitBetween, createdAt = createdAt
+    paidByUserId = paidByUserId, splitBetween = splitBetween, createdAt = createdAt,
+    categoryId = categoryId
 )
 
 fun ExpenseDto.toDomain() = Expense(
     id = id, groupId = groupId, description = description, amount = amount,
-    paidByUserId = paidByUserId, splitBetween = splitBetween, createdAt = createdAt
+    paidByUserId = paidByUserId, splitBetween = splitBetween, createdAt = createdAt,
+    categoryId = categoryId
 )
 
 fun ExpenseDto.toEntity() = ExpenseEntity(
     id = id, groupId = groupId, description = description, amount = amount,
-    paidByUserId = paidByUserId, splitBetween = splitBetween, createdAt = createdAt
+    paidByUserId = paidByUserId, splitBetween = splitBetween, createdAt = createdAt,
+    categoryId = categoryId
 )
 
 fun Expense.toDto() = ExpenseDto(
     id = id, groupId = groupId, description = description, amount = amount,
-    paidByUserId = paidByUserId, splitBetween = splitBetween, createdAt = createdAt
+    paidByUserId = paidByUserId, splitBetween = splitBetween, createdAt = createdAt,
+    categoryId = categoryId
 )

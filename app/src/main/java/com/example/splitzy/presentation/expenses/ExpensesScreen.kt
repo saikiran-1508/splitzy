@@ -1,6 +1,7 @@
 package com.example.splitzy.presentation.expenses
 
 import android.content.Intent
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -20,9 +21,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,7 +36,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -50,6 +52,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.splitzy.domain.model.Category
 import com.example.splitzy.domain.model.Expense
 import com.example.splitzy.presentation.groups.InitialsAvatar
 import com.example.splitzy.ui.theme.MoneyIn
@@ -141,7 +144,8 @@ fun ExpensesScreen(
                     }
                 } else {
                     items(uiState.expenses, key = { it.id }) { expense ->
-                        ExpenseRow(expense)
+                        val categoryName = uiState.categories.find { it.id == expense.categoryId }?.name
+                        ExpenseRow(expense, categoryName)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     }
                 }
@@ -151,8 +155,10 @@ fun ExpensesScreen(
 
     if (showAddDialog) {
         AddExpenseDialog(
-            onConfirm = { description, amount, paidBy, splitBetween ->
-                viewModel.addExpense(description, amount, paidBy, splitBetween)
+            categories = uiState.categories,
+            onAddCategory = viewModel::addCategory,
+            onConfirm = { description, amount, paidBy, splitBetween, categoryId ->
+                viewModel.addExpense(description, amount, paidBy, splitBetween, categoryId)
                 showAddDialog = false
             },
             onDismiss = { showAddDialog = false }
@@ -205,7 +211,7 @@ private fun SettlementRow(debtor: String, creditor: String, amount: Double) {
 }
 
 @Composable
-private fun ExpenseRow(expense: Expense) {
+private fun ExpenseRow(expense: Expense, categoryName: String?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -221,6 +227,20 @@ private fun ExpenseRow(expense: Expense) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (categoryName != null) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(6.dp),
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Text(
+                        categoryName,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
         Text(expense.amount.money(), style = MaterialTheme.typography.titleSmall)
     }
@@ -228,13 +248,17 @@ private fun ExpenseRow(expense: Expense) {
 
 @Composable
 private fun AddExpenseDialog(
-    onConfirm: (description: String, amount: Double, paidBy: String, splitBetween: List<String>) -> Unit,
+    categories: List<Category>,
+    onAddCategory: (String) -> Unit,
+    onConfirm: (description: String, amount: Double, paidBy: String, splitBetween: List<String>, categoryId: String?) -> Unit,
     onDismiss: () -> Unit
 ) {
     var description by remember { mutableStateOf("") }
     var amountText by remember { mutableStateOf("") }
     var paidBy by remember { mutableStateOf("") }
     var splitText by remember { mutableStateOf("") }
+    var selectedCategoryId by remember { mutableStateOf<String?>(null) }
+    var newCategoryText by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -271,6 +295,45 @@ private fun AddExpenseDialog(
                     supportingText = { Text("Comma separated") },
                     singleLine = true
                 )
+
+                Text("Domain (optional)", style = MaterialTheme.typography.labelLarge)
+                if (categories.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        categories.forEach { category ->
+                            FilterChip(
+                                selected = selectedCategoryId == category.id,
+                                onClick = {
+                                    selectedCategoryId =
+                                        if (selectedCategoryId == category.id) null else category.id
+                                },
+                                label = { Text(category.name) }
+                            )
+                        }
+                    }
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = newCategoryText,
+                        onValueChange = { newCategoryText = it },
+                        label = { Text("New domain") },
+                        placeholder = { Text("Vegetables") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(
+                        enabled = newCategoryText.isNotBlank(),
+                        onClick = {
+                            onAddCategory(newCategoryText.trim())
+                            newCategoryText = ""
+                        }
+                    ) { Text("Add") }
+                }
             }
         },
         confirmButton = {
@@ -281,7 +344,8 @@ private fun AddExpenseDialog(
                         description.trim(),
                         amountText.toDoubleOrNull() ?: return@TextButton,
                         paidBy.trim(),
-                        splitText.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                        splitText.split(",").map { it.trim() }.filter { it.isNotEmpty() },
+                        selectedCategoryId
                     )
                 }
             ) { Text("Add") }

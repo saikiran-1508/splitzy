@@ -14,5 +14,6 @@ data class ExpenseEntity(
     val amount: Double,
     val paidByUserId: String,
     val splitBetween: List<String>,
-    val createdAt: Long
+    val createdAt: Long,
+    val categoryId: String? = null
 )

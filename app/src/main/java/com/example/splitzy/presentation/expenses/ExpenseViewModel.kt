@@ -2,10 +2,13 @@ package com.example.splitzy.presentation.expenses
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.splitzy.domain.model.Category
 import com.example.splitzy.domain.model.Expense
+import com.example.splitzy.domain.usecase.AddCategoryUseCase
 import com.example.splitzy.domain.usecase.AddExpenseUseCase
 import com.example.splitzy.domain.usecase.CalculateBalancesUseCase
 import com.example.splitzy.domain.usecase.GenerateSettlementReportUseCase
+import com.example.splitzy.domain.usecase.GetCategoriesUseCase
 import com.example.splitzy.domain.usecase.GetExpensesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,7 +28,9 @@ import javax.inject.Inject
 @HiltViewModel
 class ExpenseViewModel @Inject constructor(
     getExpenses: GetExpensesUseCase,
+    getCategories: GetCategoriesUseCase,
     private val addExpenseUseCase: AddExpenseUseCase,
+    private val addCategoryUseCase: AddCategoryUseCase,
     private val calculateBalances: CalculateBalancesUseCase,
     private val generateReport: GenerateSettlementReportUseCase
 ) : ViewModel() {
@@ -38,14 +43,18 @@ class ExpenseViewModel @Inject constructor(
     private val expenses = selectedGroupId.flatMapLatest { groupId ->
         if (groupId == null) flowOf(emptyList()) else getExpenses(groupId)
     }
+    private val categories = selectedGroupId.flatMapLatest { groupId ->
+        if (groupId == null) flowOf(emptyList()) else getCategories(groupId)
+    }
 
     val uiState: StateFlow<ExpensesUiState> =
-        combine(selectedGroupId, expenses, userMessage) { groupId, expenseList, message ->
+        combine(selectedGroupId, expenses, categories, userMessage) { groupId, expenseList, categoryList, message ->
             val balances = calculateBalances(expenseList)
             ExpensesUiState(
                 isLoading = false,
                 groupId = groupId,
                 expenses = expenseList,
+                categories = categoryList,
                 balances = balances,
                 settlements = calculateBalances.simplifyDebts(balances),
                 userMessage = message
@@ -66,7 +75,8 @@ class ExpenseViewModel @Inject constructor(
         description: String,
         amount: Double,
         paidByUserId: String,
-        splitBetween: List<String>
+        splitBetween: List<String>,
+        categoryId: String?
     ) {
         val groupId = selectedGroupId.value ?: return
         viewModelScope.launch {
@@ -77,13 +87,26 @@ class ExpenseViewModel @Inject constructor(
                 amount = amount,
                 paidByUserId = paidByUserId,
                 splitBetween = splitBetween,
-                createdAt = System.currentTimeMillis()
+                createdAt = System.currentTimeMillis(),
+                categoryId = categoryId
             )
             addExpenseUseCase(expense).onFailure { e ->
                 userMessage.value = e.message
             }
             // On success there is nothing to do: Room emits the new list,
             // the combine above recomputes, and the UI updates by itself.
+        }
+    }
+
+    // Same "no reload needed" pattern as addExpense — Room emits, categories
+    // in uiState updates on its own, the just-created one shows up immediately.
+    fun addCategory(name: String) {
+        val groupId = selectedGroupId.value ?: return
+        viewModelScope.launch {
+            val category = Category(id = UUID.randomUUID().toString(), groupId = groupId, name = name)
+            addCategoryUseCase(category).onFailure { e ->
+                userMessage.value = e.message
+            }
         }
     }
 
@@ -95,5 +118,5 @@ class ExpenseViewModel @Inject constructor(
     // to any particular event, since the user might want a report mid-trip
     // or after everyone's settled up.
     fun buildReport(groupName: String): String =
-        generateReport(groupName, uiState.value.expenses, uiState.value.settlements)
+        generateReport(groupName, uiState.value.expenses, uiState.value.categories, uiState.value.settlements)
 }

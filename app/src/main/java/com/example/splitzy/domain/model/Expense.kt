@@ -7,7 +7,8 @@ data class Expense(
     val amount: Double,
     val paidByUserId: String,
     val splitBetween: List<String>,   // user IDs sharing this expense
-    val createdAt: Long
+    val createdAt: Long,
+    val categoryId: String? = null    // which "domain" (Food, Rent, ...) this belongs to, if any
 )
 
 data class Group(

@@ -9,5 +9,6 @@ data class ExpenseDto(
     val amount: Double,
     @Json(name = "paid_by") val paidByUserId: String,
     @Json(name = "split_between") val splitBetween: List<String>,
-    @Json(name = "created_at") val createdAt: Long
+    @Json(name = "created_at") val createdAt: Long,
+    @Json(name = "category_id") val categoryId: String? = null
 )

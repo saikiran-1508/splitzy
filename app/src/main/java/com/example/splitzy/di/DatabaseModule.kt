@@ -3,6 +3,7 @@ package com.example.splitzy.di
 import android.content.Context
 import androidx.room.Room
 import com.example.splitzy.data.local.SplitzyDatabase
+import com.example.splitzy.data.local.dao.CategoryDao
 import com.example.splitzy.data.local.dao.ExpenseDao
 import com.example.splitzy.data.local.dao.GroupDao
 import dagger.Module
@@ -35,4 +36,7 @@ object DatabaseModule {
 
     @Provides
     fun provideGroupDao(db: SplitzyDatabase): GroupDao = db.groupDao()
+
+    @Provides
+    fun provideCategoryDao(db: SplitzyDatabase): CategoryDao = db.categoryDao()
 }

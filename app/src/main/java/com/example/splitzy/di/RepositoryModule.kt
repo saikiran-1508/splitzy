@@ -1,7 +1,9 @@
 package com.example.splitzy.di
 
+import com.example.splitzy.data.repository.CategoryRepositoryImpl
 import com.example.splitzy.data.repository.ExpenseRepositoryImpl
 import com.example.splitzy.data.repository.GroupRepositoryImpl
+import com.example.splitzy.domain.repository.CategoryRepository
 import com.example.splitzy.domain.repository.ExpenseRepository
 import com.example.splitzy.domain.repository.GroupRepository
 import dagger.Binds
@@ -25,4 +27,10 @@ abstract class RepositoryModule {
     abstract fun bindGroupRepository(
         impl: GroupRepositoryImpl
     ): GroupRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCategoryRepository(
+        impl: CategoryRepositoryImpl
+    ): CategoryRepository
 }
