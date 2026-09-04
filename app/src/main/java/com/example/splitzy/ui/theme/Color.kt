@@ -2,49 +2,56 @@ package com.example.splitzy.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Deep teal is the brand color — trustworthy, money-adjacent without being
-// the generic green every fintech app defaults to. Amber is the one accent,
-// used sparingly (FABs, the "you get paid" pill) so it stays an accent.
+// A "home" palette: muted sage green + clay terracotta on a warm cream base.
+// Deliberately not a saturated brand color and not stark black/white —
+// closer to the colors of an actual living room than a fintech dashboard.
 
-val TealPrimaryLight = Color(0xFF146356)
-val OnTealPrimaryLight = Color(0xFFFFFFFF)
-val TealPrimaryContainerLight = Color(0xFFCDEEE4)
-val OnTealPrimaryContainerLight = Color(0xFF00201A)
+val SagePrimaryLight = Color(0xFF4F7452)
+val OnSagePrimaryLight = Color(0xFFFFFFFF)
+val SagePrimaryContainerLight = Color(0xFFDCEBDC)
+val OnSagePrimaryContainerLight = Color(0xFF17291B)
 
-val AmberSecondaryLight = Color(0xFFB4590A)
-val OnAmberSecondaryLight = Color(0xFFFFFFFF)
-val AmberSecondaryContainerLight = Color(0xFFFFDCC1)
-val OnAmberSecondaryContainerLight = Color(0xFF381500)
+val ClaySecondaryLight = Color(0xFFB56A4B)
+val OnClaySecondaryLight = Color(0xFFFFFFFF)
+val ClaySecondaryContainerLight = Color(0xFFF4DED2)
+val OnClaySecondaryContainerLight = Color(0xFF3A1D0F)
 
-val BackgroundLight = Color(0xFFFBFBF6)
-val SurfaceLight = Color(0xFFFBFBF6)
-val SurfaceVariantLight = Color(0xFFEBEAE2)
-val OnSurfaceLight = Color(0xFF1B1C19)
-val OnSurfaceVariantLight = Color(0xFF48493F)
-val OutlineLight = Color(0xFF79796E)
-val OutlineVariantLight = Color(0xFFC9C8BC)
+val BackgroundLight = Color(0xFFF7F2EA)
+val SurfaceLight = Color(0xFFFBF8F2)
+val SurfaceVariantLight = Color(0xFFEAE2D4)
+val OnSurfaceLight = Color(0xFF2B2620)
+val OnSurfaceVariantLight = Color(0xFF5B5546)
+val OutlineLight = Color(0xFF857E6C)
+val OutlineVariantLight = Color(0xFFD8D0BF)
 
-val TealPrimaryDark = Color(0xFF8ED9C4)
-val OnTealPrimaryDark = Color(0xFF00382E)
-val TealPrimaryContainerDark = Color(0xFF005141)
-val OnTealPrimaryContainerDark = Color(0xFFAAF2DD)
+val SagePrimaryDark = Color(0xFFA0C6A2)
+val OnSagePrimaryDark = Color(0xFF17291B)
+val SagePrimaryContainerDark = Color(0xFF3E5940)
+val OnSagePrimaryContainerDark = Color(0xFFDCEBDC)
 
-val AmberSecondaryDark = Color(0xFFFFB77C)
-val OnAmberSecondaryDark = Color(0xFF4C2700)
-val AmberSecondaryContainerDark = Color(0xFF6D3C00)
-val OnAmberSecondaryContainerDark = Color(0xFFFFDCC1)
+val ClaySecondaryDark = Color(0xFFE3A484)
+val OnClaySecondaryDark = Color(0xFF3A1D0F)
+val ClaySecondaryContainerDark = Color(0xFF6B4531)
+val OnClaySecondaryContainerDark = Color(0xFFF4DED2)
 
-val BackgroundDark = Color(0xFF14150F)
-val SurfaceDark = Color(0xFF14150F)
-val SurfaceVariantDark = Color(0xFF48493F)
-val OnSurfaceDark = Color(0xFFE4E3D9)
-val OnSurfaceVariantDark = Color(0xFFC9C8BC)
-val OutlineDark = Color(0xFF929182)
-val OutlineVariantDark = Color(0xFF48493F)
+// Warm charcoal instead of pure black — reads as dim room lighting, not "OLED off".
+val BackgroundDark = Color(0xFF201C16)
+val SurfaceDark = Color(0xFF26221B)
+val SurfaceVariantDark = Color(0xFF4A4436)
+val OnSurfaceDark = Color(0xFFECE6D9)
+val OnSurfaceVariantDark = Color(0xFFD2CAB8)
+val OutlineDark = Color(0xFF9C9585)
+val OutlineVariantDark = Color(0xFF4A4436)
 
-// Settlement colors: independent of the primary/secondary roles so they read
-// consistently as "money in" / "money out" regardless of theme.
-val MoneyIn = Color(0xFF1E8E3E)
-val MoneyInContainer = Color(0xFFD7F2DE)
-val MoneyOut = Color(0xFFC4432B)
-val MoneyOutContainer = Color(0xFFFBE0DA)
+// Settlement colors: independent of primary/secondary so "money in / money out"
+// reads consistently regardless of theme.
+val MoneyIn = Color(0xFF3F8455)
+val MoneyInContainer = Color(0xFFDCEBDC)
+val MoneyOut = Color(0xFFB5473A)
+val MoneyOutContainer = Color(0xFFF6DFD9)
+
+// Small accent tints for group-type badges — legible on both light and dark
+// surfaces since they're only ever used at icon scale, not as fills.
+val TripAccent = Color(0xFFC1694F)
+val HouseholdAccent = Color(0xFF5B8A63)
+val PersonalFamilyAccent = Color(0xFF8E6B93)

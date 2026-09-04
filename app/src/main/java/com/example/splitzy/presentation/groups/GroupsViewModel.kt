@@ -3,6 +3,7 @@ package com.example.splitzy.presentation.groups
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.splitzy.domain.model.Group
+import com.example.splitzy.domain.model.GroupType
 import com.example.splitzy.domain.usecase.AddGroupUseCase
 import com.example.splitzy.domain.usecase.GetGroupsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,12 +37,13 @@ class GroupsViewModel @Inject constructor(
             )
 
     // No user accounts until Phase 8 (Firebase Auth), so member names double as IDs.
-    fun addGroup(name: String, memberNames: List<String>) {
+    fun addGroup(name: String, memberNames: List<String>, type: GroupType) {
         viewModelScope.launch {
             val group = Group(
                 id = UUID.randomUUID().toString(),
                 name = name.trim(),
-                memberIds = memberNames.map { it.trim() }.filter { it.isNotEmpty() }
+                memberIds = memberNames.map { it.trim() }.filter { it.isNotEmpty() },
+                type = type
             )
             addGroupUseCase(group).onFailure { e ->
                 userMessage.value = e.message

@@ -4,11 +4,13 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import com.example.splitzy.data.local.Converters
+import com.example.splitzy.domain.model.GroupType
 
 @Entity(tableName = "groups")
 @TypeConverters(Converters::class)
 data class GroupEntity(
     @PrimaryKey val id: String,
     val name: String,
-    val memberIds: List<String>
+    val memberIds: List<String>,
+    val type: GroupType = GroupType.TRIP
 )

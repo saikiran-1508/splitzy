@@ -13,7 +13,8 @@ data class Expense(
 data class Group(
     val id: String,
     val name: String,
-    val memberIds: List<String>
+    val memberIds: List<String>,
+    val type: GroupType = GroupType.TRIP
 )
 
 data class Balance(

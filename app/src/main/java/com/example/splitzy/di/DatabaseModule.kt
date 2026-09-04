@@ -23,7 +23,11 @@ object DatabaseModule {
             context,
             SplitzyDatabase::class.java,
             "splitzy.db"
-        ).build()
+        )
+            // No real user data to preserve yet, and no proper migrations
+            // written — wipe and recreate on schema changes until closer to release.
+            .fallbackToDestructiveMigration(dropAllTables = true)
+            .build()
     }
 
     @Provides

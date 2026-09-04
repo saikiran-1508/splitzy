@@ -10,7 +10,7 @@ import com.example.splitzy.data.local.entity.GroupEntity
 
 @Database(
     entities = [ExpenseEntity::class, GroupEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
