@@ -6,6 +6,7 @@ import com.example.splitzy.domain.model.Group
 import com.example.splitzy.domain.model.GroupType
 import com.example.splitzy.domain.usecase.AddGroupUseCase
 import com.example.splitzy.domain.usecase.GetGroupsUseCase
+import com.example.splitzy.domain.usecase.SeedDefaultCategoriesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,7 +21,8 @@ import javax.inject.Inject
 @HiltViewModel
 class GroupsViewModel @Inject constructor(
     getGroups: GetGroupsUseCase,
-    private val addGroupUseCase: AddGroupUseCase
+    private val addGroupUseCase: AddGroupUseCase,
+    private val seedDefaultCategories: SeedDefaultCategoriesUseCase
 ) : ViewModel() {
 
     private val userMessage = MutableStateFlow<String?>(null)
@@ -45,7 +47,9 @@ class GroupsViewModel @Inject constructor(
                 memberIds = memberNames.map { it.trim() }.filter { it.isNotEmpty() },
                 type = type
             )
-            addGroupUseCase(group).onFailure { e ->
+            addGroupUseCase(group).onSuccess {
+                seedDefaultCategories(group.id, type)
+            }.onFailure { e ->
                 userMessage.value = e.message
             }
         }

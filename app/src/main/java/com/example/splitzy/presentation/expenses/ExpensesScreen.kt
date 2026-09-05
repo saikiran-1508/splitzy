@@ -1,6 +1,7 @@
 package com.example.splitzy.presentation.expenses
 
 import android.content.Intent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
@@ -157,6 +159,7 @@ fun ExpensesScreen(
         AddExpenseDialog(
             categories = uiState.categories,
             onAddCategory = viewModel::addCategory,
+            onDeleteCategory = viewModel::deleteCategory,
             onConfirm = { description, amount, paidBy, splitBetween, categoryId ->
                 viewModel.addExpense(description, amount, paidBy, splitBetween, categoryId)
                 showAddDialog = false
@@ -250,6 +253,7 @@ private fun ExpenseRow(expense: Expense, categoryName: String?) {
 private fun AddExpenseDialog(
     categories: List<Category>,
     onAddCategory: (String) -> Unit,
+    onDeleteCategory: (Category) -> Unit,
     onConfirm: (description: String, amount: Double, paidBy: String, splitBetween: List<String>, categoryId: String?) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -309,7 +313,19 @@ private fun AddExpenseDialog(
                                     selectedCategoryId =
                                         if (selectedCategoryId == category.id) null else category.id
                                 },
-                                label = { Text(category.name) }
+                                label = { Text(category.name) },
+                                trailingIcon = {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "Delete ${category.name}",
+                                        modifier = Modifier
+                                            .size(16.dp)
+                                            .clickable {
+                                                if (selectedCategoryId == category.id) selectedCategoryId = null
+                                                onDeleteCategory(category)
+                                            }
+                                    )
+                                }
                             )
                         }
                     }

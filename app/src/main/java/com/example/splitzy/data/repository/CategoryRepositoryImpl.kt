@@ -25,4 +25,13 @@ class CategoryRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun deleteCategory(category: Category): Result<Unit> {
+        return try {
+            categoryDao.deleteCategory(category.toEntity())
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
