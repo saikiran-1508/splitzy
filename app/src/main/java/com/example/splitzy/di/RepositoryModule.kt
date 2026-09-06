@@ -1,5 +1,6 @@
 package com.example.splitzy.di
 
+import com.example.splitzy.data.local.SettingsRepositoryImpl
 import com.example.splitzy.data.repository.AuthRepositoryImpl
 import com.example.splitzy.data.repository.CategoryRepositoryImpl
 import com.example.splitzy.data.repository.ExpenseRepositoryImpl
@@ -8,6 +9,7 @@ import com.example.splitzy.domain.repository.AuthRepository
 import com.example.splitzy.domain.repository.CategoryRepository
 import com.example.splitzy.domain.repository.ExpenseRepository
 import com.example.splitzy.domain.repository.GroupRepository
+import com.example.splitzy.domain.repository.SettingsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -41,4 +43,10 @@ abstract class RepositoryModule {
     abstract fun bindAuthRepository(
         impl: AuthRepositoryImpl
     ): AuthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSettingsRepository(
+        impl: SettingsRepositoryImpl
+    ): SettingsRepository
 }

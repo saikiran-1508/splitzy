@@ -18,9 +18,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,6 +46,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.splitzy.domain.model.GroupType
+import com.example.splitzy.presentation.common.rememberContactEmailPicker
 import com.example.splitzy.ui.theme.avatarColorFor
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -110,6 +113,18 @@ fun AddMembersScreen(
                 ) {
                     Icon(Icons.Default.PersonAdd, contentDescription = "Add member")
                 }
+            }
+
+            val pickFromContacts = rememberContactEmailPicker { picked ->
+                if (picked !in members) members = members + picked
+            }
+            OutlinedButton(
+                onClick = pickFromContacts,
+                shape = RoundedCornerShape(50),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+            ) {
+                Icon(Icons.Default.Contacts, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text("Pick from contacts", modifier = Modifier.padding(start = 8.dp))
             }
 
             LazyColumn(

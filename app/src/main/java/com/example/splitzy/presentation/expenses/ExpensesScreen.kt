@@ -18,7 +18,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.AlertDialog
@@ -64,6 +66,7 @@ import com.example.splitzy.domain.model.Group
 import com.example.splitzy.presentation.common.accent
 import com.example.splitzy.presentation.common.icon
 import com.example.splitzy.presentation.common.label
+import com.example.splitzy.presentation.common.rememberContactEmailPicker
 import com.example.splitzy.ui.theme.SplitzyTheme
 import com.example.splitzy.ui.theme.avatarColorFor
 import com.example.splitzy.ui.theme.categoryStyleFor
@@ -71,12 +74,15 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+// Shown as the home screen for the active group. onBack is null there (nothing
+// to go back to); onProfileClick is null when it's pushed as its own route.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExpensesScreen(
+fun GroupDetail(
     groupId: String,
     groupName: String,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
+    onProfileClick: (() -> Unit)?,
     onAddExpense: (String) -> Unit,
     viewModel: ExpenseViewModel = hiltViewModel()
 ) {
@@ -104,13 +110,20 @@ fun ExpensesScreen(
             TopAppBar(
                 title = { GroupHeaderTitle(group = group, fallbackName = groupName) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
                     }
                 },
                 actions = {
                     IconButton(onClick = { onAddExpense(groupId) }) {
                         Icon(Icons.Default.Add, contentDescription = "Add expense")
+                    }
+                    if (onProfileClick != null) {
+                        IconButton(onClick = onProfileClick) {
+                            Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -207,6 +220,15 @@ private fun AddMemberDialog(onConfirm: (String) -> Unit, onDismiss: () -> Unit) 
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp)
                 )
+                val pickFromContacts = rememberContactEmailPicker { email = it }
+                OutlinedButton(
+                    onClick = pickFromContacts,
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier.padding(top = 10.dp)
+                ) {
+                    Icon(Icons.Default.Contacts, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text("Pick from contacts", modifier = Modifier.padding(start = 8.dp))
+                }
             }
         },
         confirmButton = {

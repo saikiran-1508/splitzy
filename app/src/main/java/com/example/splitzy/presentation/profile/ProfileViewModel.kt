@@ -2,9 +2,13 @@ package com.example.splitzy.presentation.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.splitzy.domain.model.Group
 import com.example.splitzy.domain.repository.AuthRepository
 import com.example.splitzy.domain.usecase.CalculateSpendingSummaryUseCase
+import com.example.splitzy.domain.usecase.GetActiveGroupIdUseCase
 import com.example.splitzy.domain.usecase.GetAllExpensesUseCase
+import com.example.splitzy.domain.usecase.GetGroupsUseCase
+import com.example.splitzy.domain.usecase.SetActiveGroupUseCase
 import com.example.splitzy.domain.usecase.SpendingSummary
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,12 +25,17 @@ data class ProfileUiState(
     val email: String? = null,
     val displayName: String? = null,
     val summary: SpendingSummary = SpendingSummary(0.0, 0.0, 0.0, emptyList()),
+    val groups: List<Group> = emptyList(),
+    val activeGroupId: String? = null,
     val userMessage: String? = null
 )
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     getAllExpenses: GetAllExpensesUseCase,
+    getGroups: GetGroupsUseCase,
+    getActiveGroupId: GetActiveGroupIdUseCase,
+    private val setActiveGroup: SetActiveGroupUseCase,
     private val authRepository: AuthRepository,
     private val calculateSummary: CalculateSpendingSummaryUseCase
 ) : ViewModel() {
@@ -35,12 +44,20 @@ class ProfileViewModel @Inject constructor(
     private val userMessage = MutableStateFlow<String?>(null)
 
     val uiState: StateFlow<ProfileUiState> =
-        combine(getAllExpenses(), nameChanges, userMessage) { expenses, _, message ->
+        combine(
+            getAllExpenses(),
+            getGroups(),
+            getActiveGroupId(),
+            nameChanges,
+            userMessage
+        ) { expenses, groups, activeId, _, message ->
             val email = authRepository.currentUserEmail
             ProfileUiState(
                 email = email,
                 displayName = authRepository.currentUserName,
                 summary = calculateSummary(expenses, email),
+                groups = groups,
+                activeGroupId = activeId ?: groups.lastOrNull()?.id,
                 userMessage = message
             )
         }
@@ -63,6 +80,8 @@ class ProfileViewModel @Inject constructor(
                 .onFailure { e -> userMessage.value = e.message ?: "Couldn't update name" }
         }
     }
+
+    fun openGroup(groupId: String) = setActiveGroup(groupId)
 
     fun userMessageShown() {
         userMessage.value = null

@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Only to read the one contact the user picks from the system picker
+         when adding a group member; the app never lists the address book. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
     <application
         android:name=".SplitzyApp"
         android:allowBackup="true"

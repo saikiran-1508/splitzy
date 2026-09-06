@@ -8,6 +8,7 @@ import com.example.splitzy.domain.usecase.AddGroupUseCase
 import com.example.splitzy.domain.usecase.GetCurrentUserEmailUseCase
 import com.example.splitzy.domain.usecase.GetGroupsUseCase
 import com.example.splitzy.domain.usecase.SeedDefaultCategoriesUseCase
+import com.example.splitzy.domain.usecase.SetActiveGroupUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,7 +25,8 @@ class GroupsViewModel @Inject constructor(
     getGroups: GetGroupsUseCase,
     private val getCurrentUserEmail: GetCurrentUserEmailUseCase,
     private val addGroupUseCase: AddGroupUseCase,
-    private val seedDefaultCategories: SeedDefaultCategoriesUseCase
+    private val seedDefaultCategories: SeedDefaultCategoriesUseCase,
+    private val setActiveGroup: SetActiveGroupUseCase
 ) : ViewModel() {
 
     private val userMessage = MutableStateFlow<String?>(null)
@@ -54,6 +56,8 @@ class GroupsViewModel @Inject constructor(
             )
             addGroupUseCase(group).onSuccess {
                 seedDefaultCategories(group.id, type)
+                // A group you just made is the one you want to land on.
+                setActiveGroup(group.id)
             }.onFailure { e ->
                 userMessage.value = e.message
             }

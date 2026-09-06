@@ -9,11 +9,10 @@ import androidx.navigation.navArgument
 import com.example.splitzy.domain.model.GroupType
 import com.example.splitzy.presentation.auth.LoginScreen
 import com.example.splitzy.presentation.expenses.AddExpenseScreen
-import com.example.splitzy.presentation.expenses.ExpensesScreen
 import com.example.splitzy.presentation.expenses.ManageCategoriesScreen
 import com.example.splitzy.presentation.groups.AddMembersScreen
 import com.example.splitzy.presentation.groups.CreateGroupScreen
-import com.example.splitzy.presentation.groups.GroupsScreen
+import com.example.splitzy.presentation.home.HomeScreen
 import com.example.splitzy.presentation.profile.ProfileScreen
 import com.example.splitzy.presentation.splash.SplashScreen
 import com.google.firebase.auth.FirebaseAuth
@@ -24,16 +23,12 @@ import java.net.URLEncoder
 object Routes {
     const val SPLASH = "splash"
     const val LOGIN = "login"
-    const val GROUPS = "groups"
+    const val HOME = "home"
     const val PROFILE = "profile"
     const val CREATE_GROUP = "create_group"
     const val ADD_MEMBERS = "add_members/{groupName}/{groupType}"
-    const val EXPENSES = "expenses/{groupId}/{groupName}"
     const val ADD_EXPENSE = "add_expense/{groupId}"
     const val MANAGE_CATEGORIES = "manage_categories/{groupId}"
-
-    fun expenses(groupId: String, groupName: String) =
-        "expenses/$groupId/${encode(groupName)}"
 
     fun addMembers(groupName: String, type: GroupType) =
         "add_members/${encode(groupName)}/${type.name}"
@@ -68,7 +63,7 @@ fun SplitzyNavHost() {
                     // FirebaseAuth), so only route there when it's configured.
                     val auth = firebaseAuthOrNull()
                     val destination =
-                        if (auth == null || auth.currentUser != null) Routes.GROUPS else Routes.LOGIN
+                        if (auth == null || auth.currentUser != null) Routes.HOME else Routes.LOGIN
                     navController.navigate(destination) {
                         popUpTo(Routes.SPLASH) { inclusive = true }
                     }
@@ -78,19 +73,18 @@ fun SplitzyNavHost() {
         composable(Routes.LOGIN) {
             LoginScreen(
                 onLoggedIn = {
-                    navController.navigate(Routes.GROUPS) {
+                    navController.navigate(Routes.HOME) {
                         popUpTo(Routes.LOGIN) { inclusive = true }
                     }
                 }
             )
         }
-        composable(Routes.GROUPS) {
-            GroupsScreen(
-                onGroupClick = { group ->
-                    navController.navigate(Routes.expenses(group.id, group.name))
-                },
+        // Home is the active group itself, not a list of groups.
+        composable(Routes.HOME) {
+            HomeScreen(
                 onProfileClick = { navController.navigate(Routes.PROFILE) },
-                onCreateGroup = { navController.navigate(Routes.CREATE_GROUP) }
+                onCreateGroup = { navController.navigate(Routes.CREATE_GROUP) },
+                onAddExpense = { groupId -> navController.navigate(Routes.addExpense(groupId)) }
             )
         }
         composable(Routes.PROFILE) {
@@ -100,7 +94,9 @@ fun SplitzyNavHost() {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(navController.graph.id) { inclusive = true }
                     }
-                }
+                },
+                onCreateGroup = { navController.navigate(Routes.CREATE_GROUP) },
+                onGroupOpened = { navController.popBackStack(Routes.HOME, inclusive = false) }
             )
         }
         composable(Routes.CREATE_GROUP) {
@@ -122,23 +118,8 @@ fun SplitzyNavHost() {
                     backStackEntry.arguments?.getString("groupType") ?: GroupType.HOME.name
                 ),
                 onBack = { navController.popBackStack() },
-                onCreated = {
-                    navController.popBackStack(Routes.GROUPS, inclusive = false)
-                }
-            )
-        }
-        composable(
-            route = Routes.EXPENSES,
-            arguments = listOf(
-                navArgument("groupId") { type = NavType.StringType },
-                navArgument("groupName") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            ExpensesScreen(
-                groupId = backStackEntry.arguments?.getString("groupId").orEmpty(),
-                groupName = backStackEntry.arguments?.getString("groupName").decoded(),
-                onBack = { navController.popBackStack() },
-                onAddExpense = { groupId -> navController.navigate(Routes.addExpense(groupId)) }
+                // The new group becomes the active one, so home lands on it.
+                onCreated = { navController.popBackStack(Routes.HOME, inclusive = false) }
             )
         }
         composable(

@@ -1,6 +1,7 @@
 package com.example.splitzy.presentation.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -44,7 +46,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.splitzy.domain.model.Group
 import com.example.splitzy.domain.usecase.MonthlySpend
+import com.example.splitzy.presentation.common.accent
+import com.example.splitzy.presentation.common.icon
+import com.example.splitzy.presentation.common.label
 import com.example.splitzy.ui.theme.SplitzyTheme
 import com.example.splitzy.ui.theme.avatarColorFor
 import java.util.Locale
@@ -54,6 +60,8 @@ import java.util.Locale
 fun ProfileScreen(
     onBack: () -> Unit,
     onSignedOut: () -> Unit,
+    onCreateGroup: () -> Unit,
+    onGroupOpened: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -222,6 +230,46 @@ fun ProfileScreen(
                 }
             }
 
+            // My Groups lives here rather than on home, so home stays focused
+            // on the one group you're currently in.
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("My Groups", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    if (uiState.groups.isEmpty()) {
+                        Text(
+                            "No groups yet",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    } else {
+                        uiState.groups.forEach { group ->
+                            GroupRow(
+                                group = group,
+                                isActive = group.id == uiState.activeGroupId,
+                                onClick = {
+                                    viewModel.openGroup(group.id)
+                                    onGroupOpened()
+                                }
+                            )
+                        }
+                    }
+                    Button(
+                        onClick = onCreateGroup,
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Text("New group", modifier = Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
+
             OutlinedButton(
                 onClick = {
                     viewModel.signOut()
@@ -236,6 +284,54 @@ fun ProfileScreen(
                     modifier = Modifier.size(18.dp)
                 )
                 Text("Log out", modifier = Modifier.padding(start = 8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun GroupRow(group: Group, isActive: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier.size(36.dp).background(group.type.accent(), RoundedCornerShape(11.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                group.type.icon(),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.surface,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        Column(Modifier.weight(1f)) {
+            Text(
+                group.name,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1
+            )
+            Text(
+                "${group.type.label()} · ${group.memberIds.size} member${if (group.memberIds.size == 1) "" else "s"}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
+            )
+        }
+        if (isActive) {
+            Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.primaryContainer) {
+                Text(
+                    "Open",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                )
             }
         }
     }
