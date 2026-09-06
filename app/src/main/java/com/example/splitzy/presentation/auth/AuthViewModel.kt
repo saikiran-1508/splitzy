@@ -37,4 +37,22 @@ class AuthViewModel @Inject constructor(
                 }
         }
     }
+
+    fun signInWithGoogle(idToken: String, onSuccess: () -> Unit) {
+        _uiState.value = AuthUiState(isLoading = true)
+        viewModelScope.launch {
+            authRepository.continueWithGoogleIdToken(idToken)
+                .onSuccess {
+                    _uiState.value = AuthUiState()
+                    onSuccess()
+                }
+                .onFailure { e ->
+                    _uiState.value = AuthUiState(errorMessage = e.message ?: "Couldn't sign in with Google")
+                }
+        }
+    }
+
+    fun googleSignInFailed(message: String) {
+        _uiState.value = AuthUiState(errorMessage = message)
+    }
 }

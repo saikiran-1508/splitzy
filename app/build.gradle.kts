@@ -89,6 +89,12 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
 
+    // Google Sign-In, via Credential Manager (the current recommended API —
+    // GoogleSignInClient is deprecated for new integrations)
+    implementation("androidx.credentials:credentials:1.5.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.5.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 

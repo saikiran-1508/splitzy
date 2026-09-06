@@ -4,6 +4,7 @@ import com.example.splitzy.domain.repository.AuthRepository
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.GoogleAuthProvider
 import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -42,6 +43,16 @@ class AuthRepositoryImpl @Inject constructor(
             } catch (e2: Exception) {
                 Result.failure(e2)
             }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun continueWithGoogleIdToken(idToken: String): Result<Unit> {
+        return try {
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            firebaseAuth.signInWithCredential(credential).awaitResult()
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }

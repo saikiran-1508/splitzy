@@ -1,5 +1,6 @@
 package com.example.splitzy.presentation.groups
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -48,10 +49,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.splitzy.R
 import com.example.splitzy.domain.model.Group
 import com.example.splitzy.domain.model.GroupType
 import com.example.splitzy.ui.theme.EventAccent
@@ -79,7 +83,16 @@ fun GroupsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Splitzy", fontWeight = FontWeight.ExtraBold) },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Image(
+                            painter = painterResource(R.drawable.splitzy_logo),
+                            contentDescription = null,
+                            modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp))
+                        )
+                        Text("Splitzy", fontWeight = FontWeight.ExtraBold)
+                    }
+                },
                 actions = {
                     IconButton(onClick = onLogout) {
                         Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Log out")
