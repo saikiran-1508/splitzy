@@ -44,11 +44,17 @@ fun SplashScreen(onFinished: () -> Unit) {
                     .clip(RoundedCornerShape(26.dp))
             )
             Text(
+                "Splitzy",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 20.dp)
+            )
+            Text(
                 "Split Expenses. Not Friendships.",
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 16.dp)
+                modifier = Modifier.padding(top = 6.dp)
             )
         }
     }

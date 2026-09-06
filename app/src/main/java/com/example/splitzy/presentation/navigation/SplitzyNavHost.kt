@@ -6,14 +6,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.splitzy.domain.model.GroupType
 import com.example.splitzy.presentation.auth.LoginScreen
+import com.example.splitzy.presentation.expenses.AddExpenseScreen
 import com.example.splitzy.presentation.expenses.ExpensesScreen
 import com.example.splitzy.presentation.expenses.ManageCategoriesScreen
+import com.example.splitzy.presentation.groups.AddMembersScreen
+import com.example.splitzy.presentation.groups.CreateGroupScreen
 import com.example.splitzy.presentation.groups.GroupsScreen
 import com.example.splitzy.presentation.profile.ProfileScreen
 import com.example.splitzy.presentation.splash.SplashScreen
 import com.google.firebase.auth.FirebaseAuth
-
 import java.net.URLDecoder
 import java.net.URLEncoder
 
@@ -23,20 +26,30 @@ object Routes {
     const val LOGIN = "login"
     const val GROUPS = "groups"
     const val PROFILE = "profile"
+    const val CREATE_GROUP = "create_group"
+    const val ADD_MEMBERS = "add_members/{groupName}/{groupType}"
     const val EXPENSES = "expenses/{groupId}/{groupName}"
+    const val ADD_EXPENSE = "add_expense/{groupId}"
     const val MANAGE_CATEGORIES = "manage_categories/{groupId}"
-    fun expenses(groupId: String, groupName: String): String {
-        val encodedName = URLEncoder.encode(groupName, "UTF-8")
-        return "expenses/$groupId/$encodedName"
-    }
+
+    fun expenses(groupId: String, groupName: String) =
+        "expenses/$groupId/${encode(groupName)}"
+
+    fun addMembers(groupName: String, type: GroupType) =
+        "add_members/${encode(groupName)}/${type.name}"
+
+    fun addExpense(groupId: String) = "add_expense/$groupId"
+
     fun manageCategories(groupId: String) = "manage_categories/$groupId"
+
+    private fun encode(value: String): String = URLEncoder.encode(value, "UTF-8")
 }
 
-// FirebaseAuth.getInstance() throws IllegalStateException until a real
-// google-services.json is added and the google-services plugin is applied —
-// there's no real Firebase project behind this yet. Guard every call site so
-// a not-yet-configured Firebase never takes down the rest of the app; treat
-// it the same as "no signed-in user".
+private fun String?.decoded(): String = URLDecoder.decode(this.orEmpty(), "UTF-8")
+
+// FirebaseAuth.getInstance() throws IllegalStateException if google-services.json
+// is missing, so guard every call site — a not-yet-configured Firebase should
+// never take down the rest of the app; treat it as "no signed-in user".
 private fun firebaseAuthOrNull(): FirebaseAuth? = try {
     FirebaseAuth.getInstance()
 } catch (e: IllegalStateException) {
@@ -51,10 +64,8 @@ fun SplitzyNavHost() {
         composable(Routes.SPLASH) {
             SplashScreen(
                 onFinished = {
-                    // Login itself needs Firebase to work (its ViewModel injects
-                    // FirebaseAuth), so only send anyone there when Firebase is
-                    // actually configured. Otherwise go straight to Groups — the
-                    // rest of the app doesn't depend on Firebase.
+                    // Login needs Firebase to work (its ViewModel injects
+                    // FirebaseAuth), so only route there when it's configured.
                     val auth = firebaseAuthOrNull()
                     val destination =
                         if (auth == null || auth.currentUser != null) Routes.GROUPS else Routes.LOGIN
@@ -78,7 +89,8 @@ fun SplitzyNavHost() {
                 onGroupClick = { group ->
                     navController.navigate(Routes.expenses(group.id, group.name))
                 },
-                onProfileClick = { navController.navigate(Routes.PROFILE) }
+                onProfileClick = { navController.navigate(Routes.PROFILE) },
+                onCreateGroup = { navController.navigate(Routes.CREATE_GROUP) }
             )
         }
         composable(Routes.PROFILE) {
@@ -91,6 +103,30 @@ fun SplitzyNavHost() {
                 }
             )
         }
+        composable(Routes.CREATE_GROUP) {
+            CreateGroupScreen(
+                onBack = { navController.popBackStack() },
+                onNext = { name, type -> navController.navigate(Routes.addMembers(name, type)) }
+            )
+        }
+        composable(
+            route = Routes.ADD_MEMBERS,
+            arguments = listOf(
+                navArgument("groupName") { type = NavType.StringType },
+                navArgument("groupType") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            AddMembersScreen(
+                groupName = backStackEntry.arguments?.getString("groupName").decoded(),
+                groupType = GroupType.valueOf(
+                    backStackEntry.arguments?.getString("groupType") ?: GroupType.HOME.name
+                ),
+                onBack = { navController.popBackStack() },
+                onCreated = {
+                    navController.popBackStack(Routes.GROUPS, inclusive = false)
+                }
+            )
+        }
         composable(
             route = Routes.EXPENSES,
             arguments = listOf(
@@ -98,10 +134,19 @@ fun SplitzyNavHost() {
                 navArgument("groupName") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val encodedName = backStackEntry.arguments?.getString("groupName").orEmpty()
             ExpensesScreen(
                 groupId = backStackEntry.arguments?.getString("groupId").orEmpty(),
-                groupName = URLDecoder.decode(encodedName, "UTF-8"),
+                groupName = backStackEntry.arguments?.getString("groupName").decoded(),
+                onBack = { navController.popBackStack() },
+                onAddExpense = { groupId -> navController.navigate(Routes.addExpense(groupId)) }
+            )
+        }
+        composable(
+            route = Routes.ADD_EXPENSE,
+            arguments = listOf(navArgument("groupId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            AddExpenseScreen(
+                groupId = backStackEntry.arguments?.getString("groupId").orEmpty(),
                 onBack = { navController.popBackStack() },
                 onManageCategories = { groupId ->
                     navController.navigate(Routes.manageCategories(groupId))

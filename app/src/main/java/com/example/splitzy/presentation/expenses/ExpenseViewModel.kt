@@ -10,6 +10,7 @@ import com.example.splitzy.domain.usecase.CalculateBalancesUseCase
 import com.example.splitzy.domain.usecase.DeleteCategoryUseCase
 import com.example.splitzy.domain.usecase.GenerateSettlementReportUseCase
 import com.example.splitzy.domain.usecase.GetCategoriesUseCase
+import com.example.splitzy.domain.usecase.GetCurrentUserEmailUseCase
 import com.example.splitzy.domain.usecase.GetExpensesUseCase
 import com.example.splitzy.domain.usecase.GetGroupByIdUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,6 +33,7 @@ class ExpenseViewModel @Inject constructor(
     getExpenses: GetExpensesUseCase,
     getCategories: GetCategoriesUseCase,
     getGroupById: GetGroupByIdUseCase,
+    private val getCurrentUserEmail: GetCurrentUserEmailUseCase,
     private val addExpenseUseCase: AddExpenseUseCase,
     private val addCategoryUseCase: AddCategoryUseCase,
     private val deleteCategoryUseCase: DeleteCategoryUseCase,
@@ -78,6 +80,10 @@ class ExpenseViewModel @Inject constructor(
     fun selectGroup(groupId: String) {
         selectedGroupId.value = groupId
     }
+
+    // Lets the UI say "You paid" instead of repeating the signed-in user's
+    // own email back at them on every row.
+    fun currentUserEmail(): String? = getCurrentUserEmail()
 
     fun addExpense(
         description: String,

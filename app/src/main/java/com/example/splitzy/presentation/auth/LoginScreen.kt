@@ -71,10 +71,16 @@ fun LoginScreen(
                     .clip(RoundedCornerShape(22.dp))
             )
             Text(
-                "Track home, trip, and event expenses together",
+                "Welcome to Splitzy",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                modifier = Modifier.padding(top = 18.dp)
+            )
+            Text(
+                "Split expenses with friends, family and groups.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 10.dp, bottom = 28.dp)
+                modifier = Modifier.padding(top = 6.dp, bottom = 28.dp)
             )
             OutlinedTextField(
                 value = email,
@@ -160,7 +166,7 @@ fun LoginScreen(
             ) { Text("Continue with Google") }
 
             Text(
-                "New here? Just enter an email and password — we'll set up your account.",
+                "New here? We'll create an account for you.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 16.dp)
