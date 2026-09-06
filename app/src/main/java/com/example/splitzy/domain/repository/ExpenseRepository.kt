@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface ExpenseRepository {
     fun getExpensesForGroup(groupId: String): Flow<List<Expense>>
+    fun getAllExpenses(): Flow<List<Expense>>
     suspend fun addExpense(expense: Expense): Result<Unit>
     suspend fun syncWithRemote(groupId: String): Result<Unit>
 }

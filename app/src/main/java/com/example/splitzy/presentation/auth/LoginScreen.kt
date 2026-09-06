@@ -8,15 +8,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -43,6 +50,7 @@ import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     onLoggedIn: () -> Unit,
@@ -53,64 +61,86 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val isSignUp = uiState.mode == AuthMode.SIGN_UP
 
-    Scaffold { padding ->
+    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 32.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 28.dp, vertical = 24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
                 painter = painterResource(R.drawable.splitzy_logo),
                 contentDescription = "Splitzy",
-                modifier = Modifier
-                    .size(96.dp)
-                    .clip(RoundedCornerShape(22.dp))
+                modifier = Modifier.size(88.dp).clip(RoundedCornerShape(22.dp))
             )
             Text(
-                "Welcome to Splitzy",
+                if (isSignUp) "Create your account" else "Welcome to Splitzy",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 18.dp)
             )
             Text(
                 "Split expenses with friends, family and groups.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 6.dp, bottom = 28.dp)
+                modifier = Modifier.padding(top = 6.dp, bottom = 22.dp)
             )
+
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                SegmentedButton(
+                    selected = !isSignUp,
+                    onClick = { viewModel.setMode(AuthMode.SIGN_IN) },
+                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                ) { Text("Sign In") }
+                SegmentedButton(
+                    selected = isSignUp,
+                    onClick = { viewModel.setMode(AuthMode.SIGN_UP) },
+                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                ) { Text("Sign Up") }
+            }
+
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
                 label = { Text("Email") },
+                placeholder = { Text("you@example.com") },
                 singleLine = true,
+                shape = RoundedCornerShape(14.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().padding(top = 20.dp)
             )
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
                 singleLine = true,
+                shape = RoundedCornerShape(14.dp),
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                supportingText = if (isSignUp) {
+                    { Text("At least 6 characters") }
+                } else null,
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
             )
+
             uiState.errorMessage?.let { message ->
                 Text(
                     message,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
                 )
             }
+
             Button(
-                onClick = { viewModel.continueWithEmail(email, password, onLoggedIn) },
+                onClick = { viewModel.submit(email, password, onLoggedIn) },
                 enabled = !uiState.isLoading,
-                shape = RoundedCornerShape(50),
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth().padding(top = 20.dp)
             ) {
                 if (uiState.isLoading) {
@@ -119,7 +149,11 @@ fun LoginScreen(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("Continue")
+                    Text(
+                        if (isSignUp) "Create Account" else "Sign In",
+                        modifier = Modifier.padding(vertical = 6.dp),
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
 
@@ -135,7 +169,7 @@ fun LoginScreen(
 
             OutlinedButton(
                 enabled = !uiState.isLoading,
-                shape = RoundedCornerShape(50),
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth(),
                 onClick = {
                     coroutineScope.launch {
@@ -163,10 +197,13 @@ fun LoginScreen(
                         }
                     }
                 }
-            ) { Text("Continue with Google") }
+            ) {
+                Text("Continue with Google", modifier = Modifier.padding(vertical = 6.dp))
+            }
 
             Text(
-                "New here? We'll create an account for you.",
+                if (isSignUp) "Already have an account? Switch to Sign In."
+                else "New here? Switch to Sign Up to create an account.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 16.dp)

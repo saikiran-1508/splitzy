@@ -24,6 +24,13 @@ class ExpenseRepositoryImpl @Inject constructor(
             .map { entities -> entities.map { it.toDomain() } }
     }
 
+    // Across every group — the profile's monthly/yearly totals need the lot,
+    // not one group at a time.
+    override fun getAllExpenses(): Flow<List<Expense>> {
+        return expenseDao.getAllExpenses()
+            .map { entities -> entities.map { it.toDomain() } }
+    }
+
     // Optimistic write: save locally first so the UI updates instantly,
     // then push to the backend. If there's no internet, we don't fail the whole
     // action — Phase 10 (WorkManager) will retry the sync later.

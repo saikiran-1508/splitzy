@@ -6,6 +6,7 @@ import com.example.splitzy.domain.model.Category
 import com.example.splitzy.domain.model.Expense
 import com.example.splitzy.domain.usecase.AddCategoryUseCase
 import com.example.splitzy.domain.usecase.AddExpenseUseCase
+import com.example.splitzy.domain.usecase.AddMemberToGroupUseCase
 import com.example.splitzy.domain.usecase.CalculateBalancesUseCase
 import com.example.splitzy.domain.usecase.DeleteCategoryUseCase
 import com.example.splitzy.domain.usecase.GenerateSettlementReportUseCase
@@ -36,6 +37,7 @@ class ExpenseViewModel @Inject constructor(
     private val getCurrentUserEmail: GetCurrentUserEmailUseCase,
     private val addExpenseUseCase: AddExpenseUseCase,
     private val addCategoryUseCase: AddCategoryUseCase,
+    private val addMemberToGroupUseCase: AddMemberToGroupUseCase,
     private val deleteCategoryUseCase: DeleteCategoryUseCase,
     private val calculateBalances: CalculateBalancesUseCase,
     private val generateReport: GenerateSettlementReportUseCase
@@ -119,6 +121,15 @@ class ExpenseViewModel @Inject constructor(
         viewModelScope.launch {
             val category = Category(id = UUID.randomUUID().toString(), groupId = groupId, name = name)
             addCategoryUseCase(category).onFailure { e ->
+                userMessage.value = e.message
+            }
+        }
+    }
+
+    fun addMember(email: String) {
+        val groupId = selectedGroupId.value ?: return
+        viewModelScope.launch {
+            addMemberToGroupUseCase(groupId, email).onFailure { e ->
                 userMessage.value = e.message
             }
         }

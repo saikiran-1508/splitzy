@@ -19,7 +19,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -27,8 +29,11 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -52,6 +57,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.splitzy.domain.model.Balance
 import com.example.splitzy.domain.model.Category
 import com.example.splitzy.domain.model.Expense
 import com.example.splitzy.domain.model.Group
@@ -79,6 +85,7 @@ fun ExpensesScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedTab by remember { mutableStateOf(0) }
+    var showAddMemberDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val currentUser = remember { viewModel.currentUserEmail() }
     val group = uiState.group
@@ -145,9 +152,15 @@ fun ExpensesScreen(
                         currentUser = currentUser,
                         modifier = Modifier.weight(1f)
                     )
-                    1 -> MembersTab(members = members, currentUser = currentUser, modifier = Modifier.weight(1f))
+                    1 -> MembersTab(
+                        members = members,
+                        currentUser = currentUser,
+                        onAddMember = { showAddMemberDialog = true },
+                        modifier = Modifier.weight(1f)
+                    )
                     else -> SettleUpTab(
                         settlements = uiState.settlements,
+                        balances = uiState.balances,
                         currentUser = currentUser,
                         onShare = {
                             val report = viewModel.buildReport(groupName)
@@ -164,6 +177,47 @@ fun ExpensesScreen(
             }
         }
     }
+
+    if (showAddMemberDialog) {
+        AddMemberDialog(
+            onConfirm = { viewModel.addMember(it) },
+            onDismiss = { showAddMemberDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun AddMemberDialog(onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
+    var email by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add member") },
+        text = {
+            Column {
+                Text(
+                    "Someone who joined late can still be added — expenses already recorded stay as they are.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Name or email") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = email.isNotBlank(),
+                shape = RoundedCornerShape(50),
+                onClick = { onConfirm(email.trim()); onDismiss() }
+            ) { Text("Add") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
 }
 
 @Composable
@@ -271,11 +325,12 @@ private fun ExpenseCard(expense: Expense, categoryName: String?, currentUser: St
 }
 
 @Composable
-private fun MembersTab(members: List<String>, currentUser: String?, modifier: Modifier = Modifier) {
-    if (members.isEmpty()) {
-        EmptyTabState("No members yet", "Members are added when a group is created", modifier)
-        return
-    }
+private fun MembersTab(
+    members: List<String>,
+    currentUser: String?,
+    onAddMember: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
@@ -305,6 +360,16 @@ private fun MembersTab(members: List<String>, currentUser: String?, modifier: Mo
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
+        item {
+            OutlinedButton(
+                onClick = onAddMember,
+                shape = RoundedCornerShape(50),
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+            ) {
+                Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text("Add member", modifier = Modifier.padding(start = 8.dp))
+            }
+        }
     }
 }
 
@@ -326,6 +391,7 @@ private fun RolePill(isOwner: Boolean) {
 @Composable
 private fun SettleUpTab(
     settlements: List<Pair<String, Pair<String, Double>>>,
+    balances: List<Balance>,
     currentUser: String?,
     onShare: () -> Unit,
     modifier: Modifier = Modifier
@@ -337,7 +403,7 @@ private fun SettleUpTab(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
         )
-        if (settlements.isEmpty()) {
+        if (settlements.isEmpty() && balances.all { kotlin.math.abs(it.amount) < 0.01 }) {
             EmptyTabState("Everyone is settled up", "No payments needed right now", Modifier.weight(1f))
         } else {
             LazyColumn(
@@ -345,9 +411,18 @@ private fun SettleUpTab(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(settlements) { (debtor, creditorAndAmount) ->
-                    val (creditor, amount) = creditorAndAmount
-                    SettlementCard(debtor, creditor, amount, currentUser)
+                if (settlements.isNotEmpty()) {
+                    item { SettleSectionLabel("Who pays whom") }
+                    items(settlements) { (debtor, creditorAndAmount) ->
+                        val (creditor, amount) = creditorAndAmount
+                        SettlementCard(debtor, creditor, amount, currentUser)
+                    }
+                }
+                // The per-person view: what each member is up or down overall,
+                // before it's simplified into the fewest transfers above.
+                item { SettleSectionLabel("Each person's balance") }
+                items(balances.sortedByDescending { it.amount }) { balance ->
+                    BalanceRow(balance, currentUser)
                 }
             }
         }
@@ -411,6 +486,50 @@ private fun SettlementCard(debtor: String, creditor: String, amount: Double, cur
                 color = amountColor
             )
         }
+    }
+}
+
+@Composable
+private fun SettleSectionLabel(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 6.dp)
+    )
+}
+
+@Composable
+private fun BalanceRow(balance: Balance, currentUser: String?) {
+    val isYou = balance.userId == currentUser
+    val owed = balance.amount >= 0
+    val color = if (owed) SplitzyTheme.accents.moneyIn else SplitzyTheme.accents.moneyOut
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        NameAvatar(balance.userId, size = 36.dp)
+        Column(Modifier.weight(1f)) {
+            Text(
+                if (isYou) "You" else balance.userId.substringBefore("@"),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
+            Text(
+                if (kotlin.math.abs(balance.amount) < 0.01) "settled up"
+                else if (owed) "gets back" else "owes",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Text(
+            kotlin.math.abs(balance.amount).money(),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = if (kotlin.math.abs(balance.amount) < 0.01) MaterialTheme.colorScheme.onSurfaceVariant else color
+        )
     }
 }
 

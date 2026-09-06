@@ -3,8 +3,8 @@ package com.example.splitzy.data.repository
 import com.example.splitzy.domain.repository.AuthRepository
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.userProfileChangeRequest
 import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -33,19 +33,28 @@ class AuthRepositoryImpl @Inject constructor(
     override val currentUserEmail: String?
         get() = firebaseAuth.currentUser?.email
 
-    // One button, not a separate sign-up screen: try to sign in, and if no
-    // account exists yet with this email, create one on the spot.
-    override suspend fun continueWithEmail(email: String, password: String): Result<Unit> {
+    override val currentUserName: String?
+        get() = firebaseAuth.currentUser?.displayName?.takeIf { it.isNotBlank() }
+
+    // Sign-in and sign-up are separate on purpose. The old "try to sign in and
+    // create the account if the user doesn't exist" trick relied on catching
+    // FirebaseAuthInvalidUserException, but Firebase's email enumeration
+    // protection (on by default) reports an unknown email as
+    // INVALID_LOGIN_CREDENTIALS — indistinguishable from a wrong password — so
+    // that fallback never fired and new users could never register.
+    override suspend fun signIn(email: String, password: String): Result<Unit> {
         return try {
             firebaseAuth.signInWithEmailAndPassword(email, password).awaitResult()
             Result.success(Unit)
-        } catch (e: FirebaseAuthInvalidUserException) {
-            try {
-                firebaseAuth.createUserWithEmailAndPassword(email, password).awaitResult()
-                Result.success(Unit)
-            } catch (e2: Exception) {
-                Result.failure(e2)
-            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun signUp(email: String, password: String): Result<Unit> {
+        return try {
+            firebaseAuth.createUserWithEmailAndPassword(email, password).awaitResult()
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -55,6 +64,16 @@ class AuthRepositoryImpl @Inject constructor(
         return try {
             val credential = GoogleAuthProvider.getCredential(idToken, null)
             firebaseAuth.signInWithCredential(credential).awaitResult()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateDisplayName(name: String): Result<Unit> {
+        val user = firebaseAuth.currentUser ?: return Result.failure(IllegalStateException("Not signed in"))
+        return try {
+            user.updateProfile(userProfileChangeRequest { displayName = name }).awaitResult()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

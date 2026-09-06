@@ -10,6 +10,9 @@ interface ExpenseDao {
     @Query("SELECT * FROM expenses WHERE groupId = :groupId ORDER BY createdAt DESC")
     fun getExpensesForGroup(groupId: String): Flow<List<ExpenseEntity>>
 
+    @Query("SELECT * FROM expenses ORDER BY createdAt DESC")
+    fun getAllExpenses(): Flow<List<ExpenseEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertExpense(expense: ExpenseEntity)
 

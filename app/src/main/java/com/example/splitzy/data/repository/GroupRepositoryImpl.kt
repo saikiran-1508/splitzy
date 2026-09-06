@@ -29,4 +29,15 @@ class GroupRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    // Same insert — the DAO replaces on matching id, so saving an edited
+    // group (a member added later, say) updates the existing row.
+    override suspend fun updateGroup(group: Group): Result<Unit> {
+        return try {
+            groupDao.insertGroup(group.toEntity())
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
