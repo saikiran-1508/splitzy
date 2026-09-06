@@ -1,6 +1,5 @@
 package com.example.splitzy.presentation.groups
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -25,18 +23,18 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Luggage
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -81,7 +79,7 @@ fun GroupsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Splitzy", fontWeight = FontWeight.SemiBold) },
+                title = { Text("Splitzy", fontWeight = FontWeight.ExtraBold) },
                 actions = {
                     IconButton(onClick = onLogout) {
                         Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Log out")
@@ -94,7 +92,8 @@ fun GroupsScreen(
             ExtendedFloatingActionButton(
                 text = { Text("New group") },
                 icon = { Icon(Icons.Default.Groups, contentDescription = null) },
-                onClick = { showAddDialog = true }
+                onClick = { showAddDialog = true },
+                shape = RoundedCornerShape(50)
             )
         }
     ) { padding ->
@@ -108,11 +107,11 @@ fun GroupsScreen(
 
             else -> LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(vertical = 8.dp)
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(uiState.groups, key = { it.id }) { group ->
-                    GroupRow(group = group, onClick = { onGroupClick(group) })
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    GroupCard(group = group, onClick = { onGroupClick(group) })
                 }
             }
         }
@@ -152,56 +151,49 @@ private fun EmptyGroupsState(modifier: Modifier = Modifier) {
     }
 }
 
+// A solid-color card per group, tinted by its type — this is the one place
+// group type should be unmissable at a glance, not a subtle badge.
 @Composable
-private fun GroupRow(group: Group, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+private fun GroupCard(group: Group, onClick: () -> Unit) {
+    val accent = group.type.accentColor()
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = accent
     ) {
-        InitialsAvatar(text = group.name)
-        Column(Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Icon(
-                    group.type.icon(),
-                    contentDescription = group.type.label(),
-                    modifier = Modifier.size(14.dp),
-                    tint = group.type.accentColor()
-                )
-                Text(group.name, style = MaterialTheme.typography.titleMedium)
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(Color.White.copy(alpha = 0.22f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(group.type.icon(), contentDescription = group.type.label(), tint = Color.White)
             }
-            Text(
-                if (group.memberIds.isEmpty()) "No members yet"
-                else group.memberIds.joinToString(", "),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
+            Column(Modifier.weight(1f)) {
+                Text(
+                    group.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    "${group.type.label()} · ${group.memberIds.size} member${if (group.memberIds.size == 1) "" else "s"}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.85f)
+                )
+            }
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.85f)
             )
         }
-        Icon(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.outline
-        )
-    }
-}
-
-@Composable
-internal fun InitialsAvatar(text: String, size: androidx.compose.ui.unit.Dp = 40.dp) {
-    Box(
-        modifier = Modifier
-            .size(size)
-            .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text.trim().take(1).uppercase().ifEmpty { "?" },
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-            style = MaterialTheme.typography.titleMedium
-        )
     }
 }
 
@@ -215,6 +207,17 @@ private fun GroupType.label(): String = when (this) {
     GroupType.HOME -> "Home"
     GroupType.TRIP -> "Trip"
     GroupType.EVENT -> "Event"
+}
+
+private fun GroupType.subtitle(): String = when (this) {
+    GroupType.HOME -> "Shared household or personal tracking"
+    GroupType.TRIP -> "Vacations, travel with friends"
+    GroupType.EVENT -> "Parties, celebrations, special events"
+}
+
+private fun GroupType.memberHint(): String = when (this) {
+    GroupType.HOME -> "Just add yourself"
+    else -> "Minimum 2 members needed"
 }
 
 private fun GroupType.accentColor(): Color = when (this) {
@@ -235,25 +238,28 @@ private fun AddGroupDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New group") },
+        title = { Text("Create a New Group") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    types.forEach { option ->
-                        TypeOptionBox(
-                            type = option,
-                            selected = type == option,
-                            onClick = { type = option },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    "Choose the type of group",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                types.forEach { option ->
+                    TypeOptionRow(
+                        type = option,
+                        selected = type == option,
+                        onClick = { type = option }
+                    )
                 }
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("Group name") },
                     placeholder = { Text(type.namePlaceholder()) },
-                    singleLine = true
+                    singleLine = true,
+                    modifier = Modifier.padding(top = 6.dp)
                 )
                 OutlinedTextField(
                     value = membersText,
@@ -271,10 +277,11 @@ private fun AddGroupDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            Button(
                 enabled = name.isNotBlank(),
+                shape = RoundedCornerShape(50),
                 onClick = { onConfirm(name, membersText.split(","), type) }
-            ) { Text("Create") }
+            ) { Text("Create Group") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
@@ -283,31 +290,56 @@ private fun AddGroupDialog(
 }
 
 @Composable
-private fun TypeOptionBox(
+private fun TypeOptionRow(
     type: GroupType,
     selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onClick: () -> Unit
 ) {
     val accent = type.accentColor()
     Surface(
         onClick = onClick,
-        modifier = modifier.aspectRatio(1f),
-        shape = RoundedCornerShape(14.dp),
-        color = if (selected) accent.copy(alpha = 0.16f) else MaterialTheme.colorScheme.surfaceVariant,
-        border = BorderStroke(if (selected) 2.dp else 1.dp, if (selected) accent else MaterialTheme.colorScheme.outlineVariant)
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = if (selected) accent else accent.copy(alpha = 0.12f)
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(type.icon(), contentDescription = null, tint = accent, modifier = Modifier.size(26.dp))
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(
+                        if (selected) Color.White.copy(alpha = 0.22f) else accent.copy(alpha = 0.18f),
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    type.icon(),
+                    contentDescription = null,
+                    tint = if (selected) Color.White else accent,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Column(Modifier.weight(1f)) {
+                Text(
+                    type.label(),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    type.subtitle(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (selected) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             Text(
-                type.label(),
-                style = MaterialTheme.typography.labelLarge,
-                color = if (selected) accent else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 6.dp)
+                type.memberHint(),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (selected) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

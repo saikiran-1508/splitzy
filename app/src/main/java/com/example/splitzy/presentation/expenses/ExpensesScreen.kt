@@ -1,6 +1,7 @@
 package com.example.splitzy.presentation.expenses
 
 import android.content.Intent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -24,6 +26,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -48,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -56,9 +60,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.splitzy.domain.model.Category
 import com.example.splitzy.domain.model.Expense
-import com.example.splitzy.presentation.groups.InitialsAvatar
 import com.example.splitzy.ui.theme.MoneyIn
 import com.example.splitzy.ui.theme.MoneyInContainer
+import com.example.splitzy.ui.theme.avatarColorFor
+import com.example.splitzy.ui.theme.categoryStyleFor
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -86,7 +91,7 @@ fun ExpensesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(groupName, fontWeight = FontWeight.SemiBold) },
+                title = { Text(groupName, fontWeight = FontWeight.ExtraBold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -112,7 +117,8 @@ fun ExpensesScreen(
             ExtendedFloatingActionButton(
                 text = { Text("Add expense") },
                 icon = { Icon(Icons.Default.Receipt, contentDescription = null) },
-                onClick = { showAddDialog = true }
+                onClick = { showAddDialog = true },
+                shape = RoundedCornerShape(50)
             )
         }
     ) { padding ->
@@ -180,13 +186,31 @@ private fun SectionHeader(text: String) {
 }
 
 @Composable
+private fun NameAvatar(name: String, size: androidx.compose.ui.unit.Dp = 32.dp) {
+    val color = avatarColorFor(name)
+    Box(
+        modifier = Modifier.size(size).background(color, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            name.trim().take(1).uppercase().ifEmpty { "?" },
+            color = Color.White,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
 private fun SettlementRow(debtor: String, creditor: String, amount: Double) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        NameAvatar(debtor)
         Text(debtor, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
         Icon(
             Icons.AutoMirrored.Filled.ArrowForward,
@@ -194,14 +218,15 @@ private fun SettlementRow(debtor: String, creditor: String, amount: Double) {
             modifier = Modifier.size(16.dp),
             tint = MaterialTheme.colorScheme.outline
         )
+        NameAvatar(creditor)
         Text(
             creditor,
             style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f).padding(start = 8.dp)
+            modifier = Modifier.weight(1f).padding(start = 4.dp)
         )
         Surface(
             color = MoneyInContainer,
-            shape = RoundedCornerShape(8.dp)
+            shape = RoundedCornerShape(50)
         ) {
             Text(
                 amount.money(),
@@ -215,6 +240,7 @@ private fun SettlementRow(debtor: String, creditor: String, amount: Double) {
 
 @Composable
 private fun ExpenseRow(expense: Expense, categoryName: String?) {
+    val style = categoryStyleFor(categoryName ?: "")
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -222,30 +248,31 @@ private fun ExpenseRow(expense: Expense, categoryName: String?) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        InitialsAvatar(text = expense.paidByUserId, size = 36.dp)
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(
+                    if (categoryName != null) style.color else MaterialTheme.colorScheme.surfaceVariant,
+                    CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                style.icon,
+                contentDescription = categoryName,
+                tint = if (categoryName != null) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+            )
+        }
         Column(Modifier.weight(1f)) {
-            Text(expense.description, style = MaterialTheme.typography.titleSmall)
+            Text(expense.description, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
             Text(
                 "Paid by ${expense.paidByUserId} · split ${expense.splitBetween.size} ways",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            if (categoryName != null) {
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(6.dp),
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
-                    Text(
-                        categoryName,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
         }
-        Text(expense.amount.money(), style = MaterialTheme.typography.titleSmall)
+        Text(expense.amount.money(), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -300,13 +327,14 @@ private fun AddExpenseDialog(
                     singleLine = true
                 )
 
-                Text("Domain (optional)", style = MaterialTheme.typography.labelLarge)
+                Text("Category (optional)", style = MaterialTheme.typography.labelLarge)
                 if (categories.isNotEmpty()) {
                     Row(
                         modifier = Modifier.horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         categories.forEach { category ->
+                            val style = categoryStyleFor(category.name)
                             FilterChip(
                                 selected = selectedCategoryId == category.id,
                                 onClick = {
@@ -314,6 +342,14 @@ private fun AddExpenseDialog(
                                         if (selectedCategoryId == category.id) null else category.id
                                 },
                                 label = { Text(category.name) },
+                                leadingIcon = {
+                                    Icon(
+                                        style.icon,
+                                        contentDescription = null,
+                                        tint = style.color,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                },
                                 trailingIcon = {
                                     Icon(
                                         Icons.Default.Close,
@@ -337,7 +373,7 @@ private fun AddExpenseDialog(
                     OutlinedTextField(
                         value = newCategoryText,
                         onValueChange = { newCategoryText = it },
-                        label = { Text("New domain") },
+                        label = { Text("New category") },
                         placeholder = { Text("Vegetables") },
                         singleLine = true,
                         modifier = Modifier.weight(1f)
@@ -353,18 +389,19 @@ private fun AddExpenseDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            Button(
                 enabled = amountText.toDoubleOrNull() != null && description.isNotBlank(),
+                shape = RoundedCornerShape(50),
                 onClick = {
                     onConfirm(
                         description.trim(),
-                        amountText.toDoubleOrNull() ?: return@TextButton,
+                        amountText.toDoubleOrNull() ?: return@Button,
                         paidBy.trim(),
                         splitText.split(",").map { it.trim() }.filter { it.isNotEmpty() },
                         selectedCategoryId
                     )
                 }
-            ) { Text("Add") }
+            ) { Text("Add Expense") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
