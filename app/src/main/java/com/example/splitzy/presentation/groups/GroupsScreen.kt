@@ -18,7 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Celebration
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Groups
@@ -68,7 +68,7 @@ import com.example.splitzy.ui.theme.avatarColorFor
 @Composable
 fun GroupsScreen(
     onGroupClick: (Group) -> Unit,
-    onLogout: () -> Unit,
+    onProfileClick: () -> Unit,
     viewModel: GroupsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -96,8 +96,8 @@ fun GroupsScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onLogout) {
-                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Log out")
+                    IconButton(onClick = onProfileClick) {
+                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
                     }
                 }
             )
@@ -341,6 +341,9 @@ private fun TypeOptionRow(
                     modifier = Modifier.size(18.dp)
                 )
             }
+            // All three lines stack in one weighted column. An unweighted
+            // sibling Text here would claim its full intrinsic width first and
+            // starve this column, wrapping "Trip" one letter per line.
             Column(Modifier.weight(1f)) {
                 Text(
                     type.label(),
@@ -353,12 +356,13 @@ private fun TypeOptionRow(
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (selected) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Text(
+                    type.memberHint(),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (selected) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
             }
-            Text(
-                type.memberHint(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (selected) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }

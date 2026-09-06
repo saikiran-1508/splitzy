@@ -75,6 +75,7 @@ fun ExpensesScreen(
     groupId: String,
     groupName: String,
     onBack: () -> Unit,
+    onManageCategories: (String) -> Unit,
     viewModel: ExpenseViewModel = hiltViewModel()
 ) {
     LaunchedEffect(groupId) { viewModel.selectGroup(groupId) }
@@ -159,6 +160,10 @@ fun ExpensesScreen(
             categories = uiState.categories,
             onAddCategory = viewModel::addCategory,
             onDeleteCategory = viewModel::deleteCategory,
+            onManageCategories = {
+                showAddDialog = false
+                onManageCategories(groupId)
+            },
             onConfirm = { description, amount, paidBy, splitBetween, categoryId ->
                 viewModel.addExpense(description, amount, paidBy, splitBetween, categoryId)
                 showAddDialog = false
@@ -266,37 +271,41 @@ private fun NameAvatar(name: String, size: Dp = 32.dp) {
     }
 }
 
+// One avatar, who-owes-whom stacked underneath, amount on the right. Two
+// names side by side got unreadably cramped once members became emails.
 @Composable
 private fun SettlementRow(debtor: String, creditor: String, amount: Double) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        NameAvatar(debtor)
-        Text(debtor, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Icon(
-            Icons.AutoMirrored.Filled.ArrowForward,
-            contentDescription = "owes",
-            modifier = Modifier.size(16.dp),
-            tint = MaterialTheme.colorScheme.outline
-        )
-        NameAvatar(creditor)
-        Text(
-            creditor,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f).padding(start = 4.dp)
-        )
+        NameAvatar(debtor, size = 40.dp)
+        Column(Modifier.weight(1f)) {
+            Text(
+                debtor,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
+            Text(
+                "owes $creditor",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
+            )
+        }
         Surface(
             color = MoneyInContainer,
             shape = RoundedCornerShape(50)
         ) {
             Text(
                 amount.money(),
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
                 style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
                 color = MoneyIn
             )
         }
@@ -368,6 +377,7 @@ private fun AddExpenseDialog(
     categories: List<Category>,
     onAddCategory: (String) -> Unit,
     onDeleteCategory: (Category) -> Unit,
+    onManageCategories: () -> Unit,
     onConfirm: (description: String, amount: Double, paidBy: String, splitBetween: List<String>, categoryId: String?) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -456,6 +466,10 @@ private fun AddExpenseDialog(
                 if (category.id == selectedCategoryId) selectedCategoryId = null
                 onDeleteCategory(category)
             },
+            onManageCategories = {
+                showCategoryPicker = false
+                onManageCategories()
+            },
             onDismiss = { showCategoryPicker = false }
         )
     }
@@ -478,8 +492,8 @@ private fun AddExpenseDialog(
     }
 }
 
-// Doubles as "manage categories": every category shown here can be deleted,
-// and a new one can be added inline — there's no separate management screen.
+// Quick add/delete lives right here for speed; "Manage categories" below
+// hands off to the full screen for anything more deliberate.
 @Composable
 private fun CategoryPickerDialog(
     categories: List<Category>,
@@ -487,6 +501,7 @@ private fun CategoryPickerDialog(
     onSelect: (String) -> Unit,
     onAddCategory: (String) -> Unit,
     onDeleteCategory: (Category) -> Unit,
+    onManageCategories: () -> Unit,
     onDismiss: () -> Unit
 ) {
     var newCategoryText by remember { mutableStateOf("") }
@@ -536,6 +551,9 @@ private fun CategoryPickerDialog(
                         enabled = newCategoryText.isNotBlank(),
                         onClick = { onAddCategory(newCategoryText.trim()); newCategoryText = "" }
                     ) { Text("Add") }
+                }
+                TextButton(onClick = onManageCategories, modifier = Modifier.fillMaxWidth()) {
+                    Text("Manage categories")
                 }
             }
         },

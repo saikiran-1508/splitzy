@@ -8,7 +8,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.splitzy.presentation.auth.LoginScreen
 import com.example.splitzy.presentation.expenses.ExpensesScreen
+import com.example.splitzy.presentation.expenses.ManageCategoriesScreen
 import com.example.splitzy.presentation.groups.GroupsScreen
+import com.example.splitzy.presentation.profile.ProfileScreen
+import com.example.splitzy.presentation.splash.SplashScreen
 import com.google.firebase.auth.FirebaseAuth
 
 import java.net.URLDecoder
@@ -16,13 +19,17 @@ import java.net.URLEncoder
 
 // Route definitions in one place so screens never hardcode each other's paths.
 object Routes {
+    const val SPLASH = "splash"
     const val LOGIN = "login"
     const val GROUPS = "groups"
+    const val PROFILE = "profile"
     const val EXPENSES = "expenses/{groupId}/{groupName}"
+    const val MANAGE_CATEGORIES = "manage_categories/{groupId}"
     fun expenses(groupId: String, groupName: String): String {
         val encodedName = URLEncoder.encode(groupName, "UTF-8")
         return "expenses/$groupId/$encodedName"
     }
+    fun manageCategories(groupId: String) = "manage_categories/$groupId"
 }
 
 // FirebaseAuth.getInstance() throws IllegalStateException until a real
@@ -39,14 +46,24 @@ private fun firebaseAuthOrNull(): FirebaseAuth? = try {
 @Composable
 fun SplitzyNavHost() {
     val navController = rememberNavController()
-    val auth = firebaseAuthOrNull()
-    // Login itself needs Firebase to work (its ViewModel injects FirebaseAuth),
-    // so only send anyone there when Firebase is actually configured. Otherwise
-    // go straight to Groups — the rest of the app doesn't depend on Firebase.
-    val startDestination =
-        if (auth == null || auth.currentUser != null) Routes.GROUPS else Routes.LOGIN
 
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(navController = navController, startDestination = Routes.SPLASH) {
+        composable(Routes.SPLASH) {
+            SplashScreen(
+                onFinished = {
+                    // Login itself needs Firebase to work (its ViewModel injects
+                    // FirebaseAuth), so only send anyone there when Firebase is
+                    // actually configured. Otherwise go straight to Groups — the
+                    // rest of the app doesn't depend on Firebase.
+                    val auth = firebaseAuthOrNull()
+                    val destination =
+                        if (auth == null || auth.currentUser != null) Routes.GROUPS else Routes.LOGIN
+                    navController.navigate(destination) {
+                        popUpTo(Routes.SPLASH) { inclusive = true }
+                    }
+                }
+            )
+        }
         composable(Routes.LOGIN) {
             LoginScreen(
                 onLoggedIn = {
@@ -61,15 +78,15 @@ fun SplitzyNavHost() {
                 onGroupClick = { group ->
                     navController.navigate(Routes.expenses(group.id, group.name))
                 },
-                onLogout = {
-                    // Only navigate to Login if Firebase actually exists to sign
-                    // out of and back into — otherwise Login would immediately
-                    // crash building its ViewModel, same as the startup check above.
-                    firebaseAuthOrNull()?.let { auth ->
-                        auth.signOut()
-                        navController.navigate(Routes.LOGIN) {
-                            popUpTo(navController.graph.id) { inclusive = true }
-                        }
+                onProfileClick = { navController.navigate(Routes.PROFILE) }
+            )
+        }
+        composable(Routes.PROFILE) {
+            ProfileScreen(
+                onBack = { navController.popBackStack() },
+                onSignedOut = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(navController.graph.id) { inclusive = true }
                     }
                 }
             )
@@ -85,6 +102,18 @@ fun SplitzyNavHost() {
             ExpensesScreen(
                 groupId = backStackEntry.arguments?.getString("groupId").orEmpty(),
                 groupName = URLDecoder.decode(encodedName, "UTF-8"),
+                onBack = { navController.popBackStack() },
+                onManageCategories = { groupId ->
+                    navController.navigate(Routes.manageCategories(groupId))
+                }
+            )
+        }
+        composable(
+            route = Routes.MANAGE_CATEGORIES,
+            arguments = listOf(navArgument("groupId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            ManageCategoriesScreen(
+                groupId = backStackEntry.arguments?.getString("groupId").orEmpty(),
                 onBack = { navController.popBackStack() }
             )
         }
