@@ -30,6 +30,9 @@ class AuthRepositoryImpl @Inject constructor(
     override val currentUserId: String?
         get() = firebaseAuth.currentUser?.uid
 
+    override val currentUserEmail: String?
+        get() = firebaseAuth.currentUser?.email
+
     // One button, not a separate sign-up screen: try to sign in, and if no
     // account exists yet with this email, create one on the spot.
     override suspend fun continueWithEmail(email: String, password: String): Result<Unit> {

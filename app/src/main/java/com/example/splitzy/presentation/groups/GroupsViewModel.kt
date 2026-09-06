@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.splitzy.domain.model.Group
 import com.example.splitzy.domain.model.GroupType
 import com.example.splitzy.domain.usecase.AddGroupUseCase
+import com.example.splitzy.domain.usecase.GetCurrentUserEmailUseCase
 import com.example.splitzy.domain.usecase.GetGroupsUseCase
 import com.example.splitzy.domain.usecase.SeedDefaultCategoriesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,6 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class GroupsViewModel @Inject constructor(
     getGroups: GetGroupsUseCase,
+    private val getCurrentUserEmail: GetCurrentUserEmailUseCase,
     private val addGroupUseCase: AddGroupUseCase,
     private val seedDefaultCategories: SeedDefaultCategoriesUseCase
 ) : ViewModel() {
@@ -38,13 +40,16 @@ class GroupsViewModel @Inject constructor(
                 initialValue = GroupsUiState()
             )
 
-    // No user accounts until Phase 8 (Firebase Auth), so member names double as IDs.
-    fun addGroup(name: String, memberNames: List<String>, type: GroupType) {
+    // Whoever is signed in when a group is created is always its Owner and
+    // first member — the Add Members screen just adds people alongside them.
+    fun currentUserEmail(): String? = getCurrentUserEmail()
+
+    fun addGroup(name: String, members: List<String>, type: GroupType) {
         viewModelScope.launch {
             val group = Group(
                 id = UUID.randomUUID().toString(),
                 name = name.trim(),
-                memberIds = memberNames.map { it.trim() }.filter { it.isNotEmpty() },
+                memberIds = members.map { it.trim() }.filter { it.isNotEmpty() }.distinct(),
                 type = type
             )
             addGroupUseCase(group).onSuccess {

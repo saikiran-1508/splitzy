@@ -18,6 +18,9 @@ class GroupRepositoryImpl @Inject constructor(
     override fun getGroups(): Flow<List<Group>> =
         groupDao.getAllGroups().map { entities -> entities.map { it.toDomain() } }
 
+    override fun getGroupById(groupId: String): Flow<Group?> =
+        groupDao.getGroupById(groupId).map { entity -> entity?.toDomain() }
+
     override suspend fun addGroup(group: Group): Result<Unit> {
         return try {
             groupDao.insertGroup(group.toEntity())

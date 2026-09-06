@@ -10,6 +10,9 @@ interface GroupDao {
     @Query("SELECT * FROM groups")
     fun getAllGroups(): Flow<List<GroupEntity>>
 
+    @Query("SELECT * FROM groups WHERE id = :groupId")
+    fun getGroupById(groupId: String): Flow<GroupEntity?>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGroup(group: GroupEntity)
 }

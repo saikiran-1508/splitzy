@@ -11,6 +11,7 @@ import com.example.splitzy.domain.usecase.DeleteCategoryUseCase
 import com.example.splitzy.domain.usecase.GenerateSettlementReportUseCase
 import com.example.splitzy.domain.usecase.GetCategoriesUseCase
 import com.example.splitzy.domain.usecase.GetExpensesUseCase
+import com.example.splitzy.domain.usecase.GetGroupByIdUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +31,7 @@ import javax.inject.Inject
 class ExpenseViewModel @Inject constructor(
     getExpenses: GetExpensesUseCase,
     getCategories: GetCategoriesUseCase,
+    getGroupById: GetGroupByIdUseCase,
     private val addExpenseUseCase: AddExpenseUseCase,
     private val addCategoryUseCase: AddCategoryUseCase,
     private val deleteCategoryUseCase: DeleteCategoryUseCase,
@@ -48,13 +50,17 @@ class ExpenseViewModel @Inject constructor(
     private val categories = selectedGroupId.flatMapLatest { groupId ->
         if (groupId == null) flowOf(emptyList()) else getCategories(groupId)
     }
+    private val group = selectedGroupId.flatMapLatest { groupId ->
+        if (groupId == null) flowOf(null) else getGroupById(groupId)
+    }
 
     val uiState: StateFlow<ExpensesUiState> =
-        combine(selectedGroupId, expenses, categories, userMessage) { groupId, expenseList, categoryList, message ->
+        combine(selectedGroupId, expenses, categories, group, userMessage) { groupId, expenseList, categoryList, groupValue, message ->
             val balances = calculateBalances(expenseList)
             ExpensesUiState(
                 isLoading = false,
                 groupId = groupId,
+                group = groupValue,
                 expenses = expenseList,
                 categories = categoryList,
                 balances = balances,

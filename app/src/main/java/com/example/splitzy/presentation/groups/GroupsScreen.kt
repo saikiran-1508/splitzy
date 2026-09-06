@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Celebration
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Luggage
@@ -47,9 +48,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -61,6 +62,7 @@ import com.example.splitzy.domain.model.GroupType
 import com.example.splitzy.ui.theme.EventAccent
 import com.example.splitzy.ui.theme.HomeAccent
 import com.example.splitzy.ui.theme.TripAccent
+import com.example.splitzy.ui.theme.avatarColorFor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,7 +73,7 @@ fun GroupsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    var showAddDialog by remember { mutableStateOf(false) }
+    var creationStep by remember { mutableStateOf<GroupCreationStep?>(null) }
 
     uiState.userMessage?.let { message ->
         LaunchedEffect(message) {
@@ -105,7 +107,7 @@ fun GroupsScreen(
             ExtendedFloatingActionButton(
                 text = { Text("New group") },
                 icon = { Icon(Icons.Default.Groups, contentDescription = null) },
-                onClick = { showAddDialog = true },
+                onClick = { creationStep = GroupCreationStep.TypeAndName },
                 shape = RoundedCornerShape(50)
             )
         }
@@ -130,15 +132,32 @@ fun GroupsScreen(
         }
     }
 
-    if (showAddDialog) {
-        AddGroupDialog(
-            onConfirm = { name, members, type ->
-                viewModel.addGroup(name, members, type)
-                showAddDialog = false
-            },
-            onDismiss = { showAddDialog = false }
-        )
+    when (val step = creationStep) {
+        GroupCreationStep.TypeAndName -> {
+            AddGroupDialog(
+                onConfirm = { name, type -> creationStep = GroupCreationStep.Members(name, type) },
+                onDismiss = { creationStep = null }
+            )
+        }
+        is GroupCreationStep.Members -> {
+            AddMembersDialog(
+                ownerEmail = viewModel.currentUserEmail(),
+                onConfirm = { members ->
+                    viewModel.addGroup(step.name, members, step.type)
+                    creationStep = null
+                },
+                onDismiss = { creationStep = null }
+            )
+        }
+        null -> {}
     }
+}
+
+// Creating a group is two steps, matching the reference flow: pick a type
+// and name it, then add who's in it (you're always first, as Owner).
+private sealed class GroupCreationStep {
+    object TypeAndName : GroupCreationStep()
+    data class Members(val name: String, val type: GroupType) : GroupCreationStep()
 }
 
 @Composable
@@ -210,13 +229,13 @@ private fun GroupCard(group: Group, onClick: () -> Unit) {
     }
 }
 
-private fun GroupType.icon(): ImageVector = when (this) {
+internal fun GroupType.icon(): ImageVector = when (this) {
     GroupType.HOME -> Icons.Default.Home
     GroupType.TRIP -> Icons.Default.Luggage
     GroupType.EVENT -> Icons.Default.Celebration
 }
 
-private fun GroupType.label(): String = when (this) {
+internal fun GroupType.label(): String = when (this) {
     GroupType.HOME -> "Home"
     GroupType.TRIP -> "Trip"
     GroupType.EVENT -> "Event"
@@ -233,7 +252,7 @@ private fun GroupType.memberHint(): String = when (this) {
     else -> "Minimum 2 members needed"
 }
 
-private fun GroupType.accentColor(): Color = when (this) {
+internal fun GroupType.accentColor(): Color = when (this) {
     GroupType.HOME -> HomeAccent
     GroupType.TRIP -> TripAccent
     GroupType.EVENT -> EventAccent
@@ -241,11 +260,10 @@ private fun GroupType.accentColor(): Color = when (this) {
 
 @Composable
 private fun AddGroupDialog(
-    onConfirm: (name: String, members: List<String>, type: GroupType) -> Unit,
+    onConfirm: (name: String, type: GroupType) -> Unit,
     onDismiss: () -> Unit
 ) {
     var name by remember { mutableStateOf("") }
-    var membersText by remember { mutableStateOf("") }
     var type by remember { mutableStateOf(GroupType.HOME) }
     val types = listOf(GroupType.HOME, GroupType.TRIP, GroupType.EVENT)
 
@@ -274,27 +292,14 @@ private fun AddGroupDialog(
                     singleLine = true,
                     modifier = Modifier.padding(top = 6.dp)
                 )
-                OutlinedTextField(
-                    value = membersText,
-                    onValueChange = { membersText = it },
-                    label = { Text("Members") },
-                    placeholder = { Text("Alex, Sam, Priya") },
-                    supportingText = {
-                        Text(
-                            if (type == GroupType.HOME) "Comma separated — just your own name works for tracking your own spending"
-                            else "Comma separated"
-                        )
-                    },
-                    singleLine = true
-                )
             }
         },
         confirmButton = {
             Button(
                 enabled = name.isNotBlank(),
                 shape = RoundedCornerShape(50),
-                onClick = { onConfirm(name, membersText.split(","), type) }
-            ) { Text("Create Group") }
+                onClick = { onConfirm(name, type) }
+            ) { Text("Next") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
@@ -362,4 +367,90 @@ private fun GroupType.namePlaceholder(): String = when (this) {
     GroupType.HOME -> "The Apartment"
     GroupType.TRIP -> "Goa Trip"
     GroupType.EVENT -> "Bowling Night"
+}
+
+@Composable
+private fun AddMembersDialog(
+    ownerEmail: String?,
+    onConfirm: (List<String>) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var newMemberText by remember { mutableStateOf("") }
+    var members by remember { mutableStateOf(listOfNotNull(ownerEmail)) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Members") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = newMemberText,
+                        onValueChange = { newMemberText = it },
+                        label = { Text("Search or enter email") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(
+                        enabled = newMemberText.isNotBlank(),
+                        onClick = {
+                            val email = newMemberText.trim()
+                            if (email.isNotEmpty() && email !in members) members = members + email
+                            newMemberText = ""
+                        }
+                    ) { Text("Add") }
+                }
+                members.forEach { member ->
+                    val isOwner = member == ownerEmail
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.size(32.dp).background(avatarColorFor(member), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                member.trim().take(1).uppercase(),
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
+                        Text(
+                            if (isOwner) "You ($member)" else member,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (isOwner) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                shape = RoundedCornerShape(50)
+                            ) {
+                                Text(
+                                    "Owner",
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        } else {
+                            IconButton(onClick = { members = members - member }) {
+                                Icon(Icons.Default.Close, contentDescription = "Remove $member")
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(shape = RoundedCornerShape(50), onClick = { onConfirm(members) }) { Text("Create Group") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Back") }
+        }
+    )
 }
