@@ -15,6 +15,8 @@ Built solo in Kotlin with Jetpack Compose and Clean Architecture.
 - **Repeat an expense** in one tap — recurring spends like petrol carry over the category, payer and split, so you only type the new amount.
 - **Settle up** — see both each person's net balance and the *minimum set of payments* that clears the group, then share a plain-text summary through any app.
 - **Works offline.** Room is the source of truth; nothing on screen waits on a network call.
+- **Add people from your contacts** — pick anyone in your phonebook; no email address required.
+- **Share an invite link** (`splitzy://join/<id>`) through WhatsApp or any other app. See the caveat in [Not built yet](#not-built-yet).
 - **Sign in** with email/password or Google.
 - **Spending history** on your profile: this month, this year, the last six months, all time.
 
@@ -134,7 +136,8 @@ Stated plainly, because the repo is public and the gaps are real:
 - **No live backend.** The Retrofit layer, DTOs and interceptor are all written, but the base URL is a placeholder, so nothing syncs between devices. `syncWithRemote()` exists and is never called.
 - **WorkManager, ML Kit and Firebase Cloud Messaging** appear in `build.gradle.kts` from earlier planning. **No code uses them.**
 - **Destructive migrations.** Room runs with `fallbackToDestructiveMigration`, so a schema change wipes local data. Fine in development, must change before release.
-- **Members are strings.** An email identifies a person, but nothing verifies it belongs to a real Splitzy account, and there are no invites.
+- **Members are labels, not accounts.** A name or email identifies a person in a group, but nothing verifies it belongs to a real Splitzy user.
+- **Invite links only open groups that already exist on the device.** The link, the `splitzy://` deep link handler and the join screen are all built and working — but with no backend, the recipient's phone has no copy of the group to join. Tapping an invite on another device shows a clear "this group isn't on this device" message rather than failing silently. Making invites work across phones is the backend's job.
 - **Package is still `com.example.splitzy`** — needs a real application ID before any Play Store submission.
 
 ---

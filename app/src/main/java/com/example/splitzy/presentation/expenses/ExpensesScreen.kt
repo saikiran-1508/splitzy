@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -66,9 +67,10 @@ import com.example.splitzy.domain.model.Category
 import com.example.splitzy.domain.model.Expense
 import com.example.splitzy.domain.model.Group
 import com.example.splitzy.presentation.common.accent
+import com.example.splitzy.presentation.navigation.Routes
 import com.example.splitzy.presentation.common.icon
 import com.example.splitzy.presentation.common.label
-import com.example.splitzy.presentation.common.rememberContactEmailPicker
+import com.example.splitzy.presentation.common.rememberContactPicker
 import com.example.splitzy.ui.theme.SplitzyTheme
 import com.example.splitzy.ui.theme.avatarColorFor
 import com.example.splitzy.ui.theme.categoryStyleFor
@@ -173,6 +175,17 @@ fun GroupDetail(
                         members = members,
                         currentUser = currentUser,
                         onAddMember = { showAddMemberDialog = true },
+                        onInvite = {
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(
+                                    Intent.EXTRA_TEXT,
+                                    "Join \"${group?.name ?: groupName}\" on Splitzy: " +
+                                        Routes.inviteLink(groupId)
+                                )
+                            }
+                            context.startActivity(Intent.createChooser(intent, "Invite to group"))
+                        },
                         modifier = Modifier.weight(1f)
                     )
                     else -> SettleUpTab(
@@ -288,11 +301,11 @@ private fun AddMemberDialog(onConfirm: (String) -> Unit, onDismiss: () -> Unit) 
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("Name or email") },
+                    label = { Text("Name") },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp)
                 )
-                val pickFromContacts = rememberContactEmailPicker { email = it }
+                val pickFromContacts = rememberContactPicker { email = it }
                 OutlinedButton(
                     onClick = pickFromContacts,
                     shape = RoundedCornerShape(50),
@@ -430,6 +443,7 @@ private fun MembersTab(
     members: List<String>,
     currentUser: String?,
     onAddMember: () -> Unit,
+    onInvite: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -469,6 +483,14 @@ private fun MembersTab(
             ) {
                 Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text("Add member", modifier = Modifier.padding(start = 8.dp))
+            }
+            Button(
+                onClick = onInvite,
+                shape = RoundedCornerShape(50),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+            ) {
+                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text("Send invite link", modifier = Modifier.padding(start = 8.dp))
             }
         }
     }

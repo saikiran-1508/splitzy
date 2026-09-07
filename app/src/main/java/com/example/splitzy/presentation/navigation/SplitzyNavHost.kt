@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.example.splitzy.domain.model.GroupType
 import com.example.splitzy.presentation.auth.LoginScreen
 import com.example.splitzy.presentation.expenses.AddExpenseScreen
@@ -13,6 +14,7 @@ import com.example.splitzy.presentation.expenses.ManageCategoriesScreen
 import com.example.splitzy.presentation.groups.AddMembersScreen
 import com.example.splitzy.presentation.groups.CreateGroupScreen
 import com.example.splitzy.presentation.home.HomeScreen
+import com.example.splitzy.presentation.join.JoinGroupScreen
 import com.example.splitzy.presentation.profile.ProfileScreen
 import com.example.splitzy.presentation.splash.SplashScreen
 import com.google.firebase.auth.FirebaseAuth
@@ -29,6 +31,10 @@ object Routes {
     const val ADD_MEMBERS = "add_members/{groupName}/{groupType}"
     const val ADD_EXPENSE = "add_expense/{groupId}"
     const val MANAGE_CATEGORIES = "manage_categories/{groupId}"
+    const val JOIN = "join/{groupId}"
+
+    // Shared as plain text, so it has to survive being pasted into a chat.
+    fun inviteLink(groupId: String) = "splitzy://join/$groupId"
 
     fun addMembers(groupName: String, type: GroupType) =
         "add_members/${encode(groupName)}/${type.name}"
@@ -131,6 +137,21 @@ fun SplitzyNavHost() {
                 onBack = { navController.popBackStack() },
                 onManageCategories = { groupId ->
                     navController.navigate(Routes.manageCategories(groupId))
+                }
+            )
+        }
+        // Opened from an invite link (splitzy://join/<id>), not reachable in-app.
+        composable(
+            route = Routes.JOIN,
+            arguments = listOf(navArgument("groupId") { type = NavType.StringType }),
+            deepLinks = listOf(navDeepLink { uriPattern = "splitzy://join/{groupId}" })
+        ) { backStackEntry ->
+            JoinGroupScreen(
+                groupId = backStackEntry.arguments?.getString("groupId").orEmpty(),
+                onDone = {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                    }
                 }
             )
         }

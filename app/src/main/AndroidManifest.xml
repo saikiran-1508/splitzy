@@ -26,6 +26,20 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Group invite links: splitzy://join/<groupId>. A custom scheme
+                 rather than an https App Link, because verified App Links need
+                 a domain serving assetlinks.json and there isn't one. -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="splitzy"
+                    android:host="join" />
+            </intent-filter>
         </activity>
     </application>
 

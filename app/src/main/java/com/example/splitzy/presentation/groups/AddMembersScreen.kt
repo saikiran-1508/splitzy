@@ -46,7 +46,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.splitzy.domain.model.GroupType
-import com.example.splitzy.presentation.common.rememberContactEmailPicker
+import com.example.splitzy.presentation.common.rememberContactPicker
 import com.example.splitzy.ui.theme.avatarColorFor
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -86,7 +86,7 @@ fun AddMembersScreen(
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             Text(
-                "Who should be part of $groupName?",
+                "Who should be part of $groupName? Pick them from your contacts, or type a name.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp)
@@ -100,11 +100,11 @@ fun AddMembersScreen(
                 OutlinedTextField(
                     value = newMemberText,
                     onValueChange = { newMemberText = it },
-                    placeholder = { Text("Search or enter email") },
+                    placeholder = { Text("Name or email") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     modifier = Modifier.weight(1f)
                 )
                 IconButton(
@@ -115,7 +115,7 @@ fun AddMembersScreen(
                 }
             }
 
-            val pickFromContacts = rememberContactEmailPicker { picked ->
+            val pickFromContacts = rememberContactPicker { picked ->
                 if (picked !in members) members = members + picked
             }
             OutlinedButton(
