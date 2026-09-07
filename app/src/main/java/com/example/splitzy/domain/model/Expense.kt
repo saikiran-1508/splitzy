@@ -15,7 +15,11 @@ data class Group(
     val id: String,
     val name: String,
     val memberIds: List<String>,
-    val type: GroupType = GroupType.TRIP
+    val type: GroupType = GroupType.TRIP,
+    // Who created it. Room is shared by every account that signs in on this
+    // device, so groups are filtered by this rather than handed to whoever
+    // happens to log in next.
+    val ownerId: String = ""
 )
 
 data class Balance(

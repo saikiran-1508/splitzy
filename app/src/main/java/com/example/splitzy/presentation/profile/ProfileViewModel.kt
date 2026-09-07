@@ -52,10 +52,14 @@ class ProfileViewModel @Inject constructor(
             userMessage
         ) { expenses, groups, activeId, _, message ->
             val email = authRepository.currentUserEmail
+            // Room is shared across accounts on this device, so narrow the
+            // totals to expenses inside groups this account actually owns.
+            val ownGroupIds = groups.map { it.id }.toSet()
+            val ownExpenses = expenses.filter { it.groupId in ownGroupIds }
             ProfileUiState(
                 email = email,
                 displayName = authRepository.currentUserName,
-                summary = calculateSummary(expenses, email),
+                summary = calculateSummary(ownExpenses, email),
                 groups = groups,
                 activeGroupId = activeId ?: groups.lastOrNull()?.id,
                 userMessage = message
@@ -87,5 +91,8 @@ class ProfileViewModel @Inject constructor(
         userMessage.value = null
     }
 
-    fun signOut() = authRepository.signOut()
+    fun signOut() {
+        setActiveGroup(null)
+        authRepository.signOut()
+    }
 }

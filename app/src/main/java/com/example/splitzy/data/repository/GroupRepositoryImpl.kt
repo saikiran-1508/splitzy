@@ -15,8 +15,8 @@ class GroupRepositoryImpl @Inject constructor(
     private val groupDao: GroupDao
 ) : GroupRepository {
 
-    override fun getGroups(): Flow<List<Group>> =
-        groupDao.getAllGroups().map { entities -> entities.map { it.toDomain() } }
+    override fun getGroupsForOwner(ownerId: String): Flow<List<Group>> =
+        groupDao.getGroupsForOwner(ownerId).map { entities -> entities.map { it.toDomain() } }
 
     override fun getGroupById(groupId: String): Flow<Group?> =
         groupDao.getGroupById(groupId).map { entity -> entity?.toDomain() }

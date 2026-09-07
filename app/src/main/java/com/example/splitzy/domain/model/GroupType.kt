@@ -13,7 +13,7 @@ enum class GroupType {
 // Every new group starts with a few categories already there, matching what
 // that kind of group almost always needs — the user can delete any of them.
 fun GroupType.defaultCategoryNames(): List<String> = when (this) {
-    GroupType.HOME -> listOf("Rent", "Groceries", "Utilities")
-    GroupType.TRIP -> listOf("Petrol", "Food", "Alcohol")
-    GroupType.EVENT -> listOf("Games")
+    GroupType.HOME -> listOf("Rent", "Groceries", "Utilities", "Internet", "Repairs")
+    GroupType.TRIP -> listOf("Petrol", "Food", "Alcohol", "Stay", "Activities", "Shopping")
+    GroupType.EVENT -> listOf("Games", "Food", "Drinks", "Decorations", "Gifts")
 }

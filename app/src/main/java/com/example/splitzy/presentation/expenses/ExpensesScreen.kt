@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
@@ -55,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -92,6 +94,7 @@ fun GroupDetail(
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedTab by remember { mutableStateOf(0) }
     var showAddMemberDialog by remember { mutableStateOf(false) }
+    var repeatOf by remember { mutableStateOf<Expense?>(null) }
     val context = LocalContext.current
     val currentUser = remember { viewModel.currentUserEmail() }
     val group = uiState.group
@@ -163,6 +166,7 @@ fun GroupDetail(
                         expenses = uiState.expenses,
                         categories = uiState.categories,
                         currentUser = currentUser,
+                        onRepeat = { repeatOf = it },
                         modifier = Modifier.weight(1f)
                     )
                     1 -> MembersTab(
@@ -191,12 +195,80 @@ fun GroupDetail(
         }
     }
 
+    repeatOf?.let { original ->
+        RepeatExpenseDialog(
+            original = original,
+            categoryName = uiState.categories.find { it.id == original.categoryId }?.name,
+            currentUser = currentUser,
+            onConfirm = { amount ->
+                viewModel.addExpense(
+                    description = original.description,
+                    amount = amount,
+                    paidByUserId = original.paidByUserId,
+                    splitBetween = original.splitBetween,
+                    categoryId = original.categoryId
+                )
+                repeatOf = null
+            },
+            onDismiss = { repeatOf = null }
+        )
+    }
+
     if (showAddMemberDialog) {
         AddMemberDialog(
             onConfirm = { viewModel.addMember(it) },
             onDismiss = { showAddMemberDialog = false }
         )
     }
+}
+
+// Recurring spends (petrol, groceries) are the common case, so tapping an
+// existing expense logs another of the same kind — category, payer and split
+// carried over, amount the only thing to type.
+@Composable
+private fun RepeatExpenseDialog(
+    original: Expense,
+    categoryName: String?,
+    currentUser: String?,
+    onConfirm: (Double) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var amountText by remember { mutableStateOf("") }
+    val amount = amountText.toDoubleOrNull()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add another ${categoryName ?: original.description}") },
+        text = {
+            Column {
+                Text(
+                    "Same split as before — ${payerLabel(original.paidByUserId, currentUser)}, " +
+                        "${original.splitBetween.size} way${if (original.splitBetween.size == 1) "" else "s"}. " +
+                        "Just enter the new amount.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 14.dp)
+                )
+                OutlinedTextField(
+                    value = amountText,
+                    onValueChange = { amountText = it },
+                    label = { Text("Amount") },
+                    placeholder = { Text(original.amount.money()) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = amount != null && amount > 0,
+                shape = RoundedCornerShape(50),
+                onClick = { onConfirm(amount ?: return@Button) }
+            ) { Text("Add") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
 }
 
 @Composable
@@ -285,6 +357,7 @@ private fun ExpensesTab(
     expenses: List<Expense>,
     categories: List<Category>,
     currentUser: String?,
+    onRepeat: (Expense) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (expenses.isEmpty()) {
@@ -298,15 +371,21 @@ private fun ExpensesTab(
     ) {
         items(expenses, key = { it.id }) { expense ->
             val categoryName = categories.find { it.id == expense.categoryId }?.name
-            ExpenseCard(expense, categoryName, currentUser)
+            ExpenseCard(expense, categoryName, currentUser, onClick = { onRepeat(expense) })
         }
     }
 }
 
 @Composable
-private fun ExpenseCard(expense: Expense, categoryName: String?, currentUser: String?) {
+private fun ExpenseCard(
+    expense: Expense,
+    categoryName: String?,
+    currentUser: String?,
+    onClick: () -> Unit
+) {
     val style = categoryStyleFor(categoryName ?: expense.description)
     Surface(
+        onClick = onClick,
         shape = RoundedCornerShape(18.dp),
         color = MaterialTheme.colorScheme.surface,
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),

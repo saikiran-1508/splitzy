@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface GroupDao {
 
-    @Query("SELECT * FROM groups")
-    fun getAllGroups(): Flow<List<GroupEntity>>
+    @Query("SELECT * FROM groups WHERE ownerId = :ownerId")
+    fun getGroupsForOwner(ownerId: String): Flow<List<GroupEntity>>
 
     @Query("SELECT * FROM groups WHERE id = :groupId")
     fun getGroupById(groupId: String): Flow<GroupEntity?>

@@ -12,5 +12,6 @@ data class GroupEntity(
     @PrimaryKey val id: String,
     val name: String,
     val memberIds: List<String>,
-    val type: GroupType = GroupType.TRIP
+    val type: GroupType = GroupType.TRIP,
+    val ownerId: String = ""
 )

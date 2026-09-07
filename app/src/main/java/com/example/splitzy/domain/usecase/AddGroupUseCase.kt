@@ -2,11 +2,13 @@ package com.example.splitzy.domain.usecase
 
 import com.example.splitzy.domain.model.Group
 import com.example.splitzy.domain.model.GroupType
+import com.example.splitzy.domain.repository.AuthRepository
 import com.example.splitzy.domain.repository.GroupRepository
 import javax.inject.Inject
 
 class AddGroupUseCase @Inject constructor(
-    private val repository: GroupRepository
+    private val repository: GroupRepository,
+    private val authRepository: AuthRepository
 ) {
     suspend operator fun invoke(group: Group): Result<Unit> {
         if (group.name.isBlank()) return Result.failure(IllegalArgumentException("Group name can't be empty"))
@@ -19,6 +21,10 @@ class AddGroupUseCase @Inject constructor(
             else "A group needs at least 2 members"
             return Result.failure(IllegalArgumentException(message))
         }
-        return repository.addGroup(group)
+        // Stamped here, not at the call site, so no path can create a group
+        // that later shows up for a different account.
+        val ownerId = authRepository.currentUserId
+            ?: return Result.failure(IllegalStateException("Sign in to create a group"))
+        return repository.addGroup(group.copy(ownerId = ownerId))
     }
 }
